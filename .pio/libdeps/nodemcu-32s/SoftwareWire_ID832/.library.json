@@ -1,0 +1,56 @@
+{
+    "name": "SoftwareWire", 
+    "version": "1.5.1", 
+    "keywords": [
+        "device", 
+        "control"
+    ], 
+    "description": "Creates a software I2C/TWI bus on every pins.", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "platforms": [
+        "atmelavr", 
+        "atmelsam", 
+        "espressif32", 
+        "espressif8266", 
+        "intel_arc32", 
+        "microchippic32", 
+        "nordicnrf51", 
+        "nordicnrf52", 
+        "ststm32", 
+        "teensy", 
+        "timsp430"
+    ], 
+    "authors": [
+        {
+            "email": "speednpower@gmail.com", 
+            "url": null, 
+            "maintainer": true, 
+            "name": "Testato"
+        }, 
+        {
+            "email": null, 
+            "url": null, 
+            "maintainer": false, 
+            "name": "Koepel"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/Testato/SoftwareWire"
+    }, 
+    "homepage": null, 
+    "export": {
+        "include": null, 
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ]
+    }, 
+    "id": 832
+}

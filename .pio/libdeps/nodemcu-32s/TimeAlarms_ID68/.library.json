@@ -1,0 +1,36 @@
+{
+    "name": "TimeAlarms", 
+    "repository": {
+        "url": "https://github.com/PaulStoffregen/TimeAlarms", 
+        "type": "git"
+    }, 
+    "platforms": [], 
+    "frameworks": [
+        "arduino"
+    ], 
+    "version": "c291c1ddad", 
+    "authors": [
+        {
+            "url": null, 
+            "maintainer": false, 
+            "email": null, 
+            "name": "Michael Margolis"
+        }
+    ], 
+    "keywords": [
+        "week", 
+        "hour", 
+        "schedule", 
+        "alarm", 
+        "year", 
+        "month", 
+        "second", 
+        "time", 
+        "date", 
+        "day", 
+        "minute"
+    ], 
+    "homepage": "http://playground.arduino.cc/Code/Time", 
+    "id": 68, 
+    "description": "Schedule alarms to occur at specific times"
+}
