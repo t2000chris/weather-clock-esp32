@@ -24,6 +24,7 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   HTTPClient http;
   String payload;
   Serial.println("Start getting info from web");
+  Serial.println(url);
   http.begin(url);
 
   // start connect 
@@ -59,19 +60,36 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   return 1;
 }
 
-void get_weather_warnings(String warnings[]){
+bool get_weather_warnings(String warnings[]){
   DynamicJsonDocument doc(7000);
   int fetchWeatherOK = 0;
 
   fetchWeatherOK = fetch_weather(url_warnings, &doc);
-
   int cnt = 0;
+  JsonObject warnObj = doc[cnt];
+
   if (fetchWeatherOK){
-      JsonObject areaObj = doc["data"][cnt];
+    Serial.println("Fetch warning OK");
+    while(!warnObj.isNull()){
+      // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
+      while(cnt < 5){
+        String warning_code = doc["code"];
+        Serial.println(warning_code);
+        warnings[cnt] = warning_code;
+        cnt++;
+        warnObj = doc[cnt];
+      }
+    }
+    return true;
+  }
+  else{
+    Serial.println("Error fetching warnings!!!");
+    return false;
   }
 }
 
-void get_local_weather(Weather *weather){
+// return true if get weather ok
+bool get_local_weather(Weather *weather){
   // size for 9 days forecast is the largest, and it should be around 6200 bytes
   DynamicJsonDocument doc(7000);
   int fetchWeatherOK = 0;
@@ -107,11 +125,14 @@ void get_local_weather(Weather *weather){
     weather->weather_icon = doc["icon"][0];
 
     // Serial.printf("Local humidity : %d\nLocal weather icon : %d\n", weather.humidity, weather.weather_icon);
+    return true;
   }
-
+  else{
+    return false;
+  }
 }
 
-void get_forecast_weather(Weather today, Weather forecastDay[]){
+bool get_forecast_weather(Weather today, Weather forecastDay[]){
   int fetchWeatherOK = 0;
   DynamicJsonDocument doc(7000);
   fetchWeatherOK = fetch_weather(url_forecast, &doc);
@@ -155,6 +176,12 @@ void get_forecast_weather(Weather today, Weather forecastDay[]){
       //               charbuf, fc_min_temp, fc_max_temp, fc_icon_num);
 
       dateCntOffset++;
-    } 
+    }
+    return true;
   }
+  else
+  {
+    return false;
+  }
+  
 }

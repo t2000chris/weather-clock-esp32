@@ -8,12 +8,13 @@
 #include "images/system.h"
 #include "imagePool.h"
 
+#include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
 #include <DHT.h>
 #include <ArduinoJson.h>
-#include <Arduino.h>
+
 #include <GxEPD2_BW.h>
 #include <TimeLib.h>
 #include <NTPClient.h>
@@ -46,16 +47,30 @@ RtcDS3231<TwoWire> Rtc(Wire);
 #include "inetweather.h"
 
 // define the pins for the e-ink display
-// This is for nodemcu-32s my own pinout
-GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4));
+// This is for nodemcu-32s pinout
+// GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4));
+
+
 // This is for Waveshare ESP32 eink driver board
-// GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ 15, /*DC=*/ 27, /*RST=*/ 26, /*BUSY=*/ 25));
+// There's some special handling (pin remap for this board)
+GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ 15, /*DC=*/ 27, /*RST=*/ 26, /*BUSY=*/ 25));
+/**  This is the Wareshare ESP32 driver board eink pin out
+#define EPD_SCK_PIN  13
+#define EPD_MOSI_PIN 14
+#define EPD_CS_PIN   15
+#define EPD_RST_PIN  26
+#define EPD_DC_PIN   27
+#define EPD_BUSY_PIN 25
+**/
 
 // Digital pin connected to the DHT sensor
-#define DHTPIN 14
+// #define DHTPIN 14
+#define DHTPIN 33
 #define DHTTYPE DHT22
 // Initialize DHT sensor.
 DHT dht(DHTPIN, DHTTYPE);
+
+#define ONBOARD_LED  2
 
 // WIFI SSID and password
 const char* ssid       = "t2000home-2.4G";
@@ -70,17 +85,23 @@ NTPClient timeClient(ntpUDP, ntpServer, gmtOffset_sec, 60000);
 // String weekday_str[7] = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
 String weekday_str[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-// String today_date_str = "";
-
 int indoor_humidity = 0;
 int indoor_temperature = 0;
+
+// we can only show a maximum of 5 warnings in our e-ink display
+String weather_wanings[5];
 
 struct Weather local_weather_today;
 struct Weather forecast[6];
 
+// all bool for status checking
 bool have_wifi = false;
 bool have_ntp = false;
-bool have_weather = false;
+bool have_rtc = false;
+bool have_temperature_sensor = false;
+bool have_local_weather = false;
+bool have_fcast_weather = false;
+bool have_warn_weather = false;
 
 // Connect WIFI
 void connectWifi()
@@ -98,42 +119,7 @@ void connectWifi()
   }
 }
 
-// just to display the local time
-// void printLocalTime()
-// {
-  // struct tm timeinfo;
-  // if(!getLocalTime(&timeinfo)){
-  //   Serial.println("Failed to obtain time");
-  //   // Serial.println("Try to connect NTP server again");
-  //   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  //   // return;
-  // }
-  
-  // time_t tnow = now();
-  // char charbuf[50];
-  // snprintf(charbuf, sizeof(charbuf), "%d/%d/%d", day(tnow), month(tnow), year(tnow));
-
-  // char timeStringBuff[50]; //50 chars should be enough
-  // // Construct a date string like "20191125" for searching in JSON 
-  // strftime(timeStringBuff, sizeof(timeStringBuff), "%Y%m%d", &timeinfo);
-  // String mystr(timeStringBuff);
-  // // today_date_str = mystr;
-
-  // local_weather_today.date = mystr;
-
-  // Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-
-  // Serial.print("Next day is : ");
-  // timeinfo.tm_mday += 1;
-  // Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  // int test = timeinfo.tm_wday;
-
-  // just convert it to char* to avoid warning when compile
-  // char charbuf[50];
-  // chi_days[test].toCharArray(charbuf, 50);
-  // Serial.printf("Today's weekday number is : %s\n", charbuf);
-// }
-
+// this is to create a "today" string to search the forecast from the weather info
 String getTodayDateString(){
   // Construct a date string like "20191125" for searching in JSON 
   if (Rtc.IsDateTimeValid()){
@@ -149,8 +135,6 @@ String getTodayDateString(){
   {
     return "";
   }
-  
-
 } 
 
 // get NTP time, return true if success
@@ -183,6 +167,8 @@ void getIndoorTemperature(){
     Serial.println(F("Failed to read from DHT sensor!"));
     return;
   }
+
+  have_temperature_sensor = true;
 
   // Compute heat index in Celsius (isFahreheit = false)
   float hic = dht.computeHeatIndex(t, h, false);
@@ -237,16 +223,14 @@ void drawStaticUI(){
 }
 
 void drawDate(){
-  // if RTC has a valid time
-  if (Rtc.IsDateTimeValid()){
-    RtcDateTime timeNow = Rtc.GetDateTime();
-    char timeStringBuff[50];
-    snprintf(timeStringBuff, sizeof(timeStringBuff), "%u/%u/%u %s", timeNow.Day(), timeNow.Month(), timeNow.Year(), weekday_str[timeNow.DayOfWeek()]);
-    String dateNow_str(timeStringBuff);
-    display.setFont(&DATE_FONT); 
-    display.setCursor(25,50);
-    display.print(dateNow_str);
-  }
+  RtcDateTime timeNow = Rtc.GetDateTime();
+  char timeStringBuff[50];
+  snprintf(timeStringBuff, sizeof(timeStringBuff), "%u/%u/%u %s", timeNow.Day(), timeNow.Month(), timeNow.Year(), weekday_str[timeNow.DayOfWeek()]);
+  String dateNow_str(timeStringBuff);
+  display.setFont(&DATE_FONT); 
+  display.setCursor(25,50);
+  display.print(dateNow_str);
+
 }
 
 void drawClock(){
@@ -280,6 +264,7 @@ void drawIndoorTemperature(){
   display.setCursor(175, 323);
   display.print(humidNow_str);
 }
+
   
   // u8g2Fonts.drawGlyph(0, 10, 0x0e200);  // Power Supply
   // u8g2Fonts.drawGlyph(12, 10, 0x0e201);  // Charging
@@ -366,10 +351,54 @@ void drawForecast(){
   }
 }
 
-void drawErrorMsg(String msg){
-  display.setFont(&ERROR_FONT); 
-  display.setCursor(260 ,255);
-  display.println(msg);
+void drawErrorMsg(){
+  int cnt = 0;
+  int y_offset = 17;
+  display.setFont(&ERROR_FONT);
+
+  // if we don't have wifi
+  if(!have_wifi){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("WiFi not connected!!");
+    cnt++;
+  }
+
+  if(!have_rtc){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("Real Time Clock not found!!");
+    cnt++;
+  }
+
+  if(!have_temperature_sensor){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("Temperature sensor not found!!");
+    cnt++;
+  }
+
+  if(!have_ntp){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("NTP not connected!!");
+    cnt++;
+  }
+
+  if(!have_local_weather){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("Cannot get local weather!!");
+    cnt++;
+  }
+
+  if(!have_fcast_weather){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("Cannot get forecast weather!!");
+    cnt++;
+  }
+  
 }
 
 
@@ -412,44 +441,50 @@ void i2cScanner(){
 
 
 
-// To check if RTC is working, if not then we just update the RTC with the NTP time
-bool RTC_check(){
-  bool boolCheck = true;
-  if (!Rtc.IsDateTimeValid()){
-    Serial.println("RTC DateTime is not valid!  Updating DateTime");
-    setTimeWithNTP();
-    boolCheck = false;
-  }
-
-  if(!Rtc.GetIsRunning()){
-    Serial.println("RTC was not actively running, starting now.  Updating Date Time");
-    Rtc.SetIsRunning(true);
-    setTimeWithNTP();
-    boolCheck = false;
-  }
-  return boolCheck;
-}
-
-
 void runEverySecond(){
-  if (Rtc.IsDateTimeValid()){
-    RtcDateTime timeNow = Rtc.GetDateTime();
-    if (timeNow.Second() == 0){
-      Serial.println("1 min, redraw the clock");
+  // if( digitalRead(ONBOARD_LED) ){
+  //   digitalWrite(ONBOARD_LED, LOW);
+  //   Serial.println("LED set to LOW");
+  // }
+  // else{
+  //   digitalWrite(ONBOARD_LED, HIGH);
+  //   Serial.println("LED set to HIGH");
+  // }
 
-      display.setPartialWindow(5, 80, 390, 130);
-      display.firstPage();
-      // display.fillScreen(GxEPD_WHITE);
-      // drawClock();
-      // display.nextPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        drawClock();
-      } while (display.nextPage());
-    }
+  RtcDateTime timeNow = Rtc.GetDateTime();
+  if (timeNow.Second() == 0){
+    // Serial.println("1 min, redraw the clock");
+
+    // update the clock
+    display.setPartialWindow(5, 80, 390, 130);
+    display.firstPage();
+    do
+    {
+      display.fillScreen(GxEPD_WHITE);
+      drawClock();
+    } while (display.nextPage());
+
+    // update indoor temperature
+    display.setPartialWindow(173, 235, 42, 90);
+    do
+    {
+      display.fillScreen(GxEPD_WHITE);
+      drawIndoorTemperature();
+    } while (display.nextPage());
   }
 }
+
+// we change the date at 0:00
+void runEveryMidnite(){
+  display.setPartialWindow(5, 1, 390, 60);
+  display.firstPage();
+  do
+  {
+    display.fillScreen(GxEPD_WHITE);
+    drawDate();
+  } while (display.nextPage());
+}
+
 
 
 void setup() {
@@ -458,6 +493,10 @@ void setup() {
   // // otherwise it won't work
   display.init(115200);
   // start the temperature sensor and Real Time Clock
+
+  // setup onboard LED
+  pinMode(ONBOARD_LED, OUTPUT);
+
   dht.begin();
   Rtc.Begin();
 
@@ -465,19 +504,31 @@ void setup() {
   connectWifi();
 
   // run the function every second.  I wanna use this lib instead of playing with hardware clock in esp32
-  Alarm.timerRepeat(1, runEverySecond); 
+  Alarm.timerRepeat(1, runEverySecond);
+  // change date every 00:00
+  Alarm.alarmRepeat(0,0,0,runEveryMidnite);
+
+  // Alarm.timerRepeat(20, updateIndoorTemperature);
 
   // do all internet tasks if we have wifi.
   if (have_wifi) {
-    // init and get the time
-    setTimeWithNTP();
+    // check if we got RTC, if so we do the NTP time sync
+    if(Rtc.GetIsRunning()){
+      have_rtc = true;
+      setTimeWithNTP();
+    }
+    else{
+      Serial.println("RTC module is not running or not found!!");
+    }
+
     // if NTP time is ok, that means we have internet (since we don't do any ping test)
     if (have_ntp){
       local_weather_today.date = getTodayDateString();
 
       // get local and all forcast weather info
-      get_local_weather(&local_weather_today);
-      get_forecast_weather(local_weather_today, forecast);
+      have_local_weather = get_local_weather(&local_weather_today);
+      have_fcast_weather = get_forecast_weather(local_weather_today, forecast);
+      have_warn_weather = get_weather_warnings(weather_wanings);
 
       // Serial.println("------ Weather today ------");
       //   Serial.printf("Date : %s\nTemp : %d\nHumidity : %d\nIcon Num : %d\n\n",
@@ -495,8 +546,18 @@ void setup() {
   // get the indoor temperature from sensor
   getIndoorTemperature();
 
+
   // start to draw UI 
   einkSetup();
+  
+
+  // *** special handling for Waveshare ESP32 Driver board *** //
+  // ********************************************************* //
+  SPI.end(); // release standard SPI pins, e.g. SCK(18), MISO(19), MOSI(23), SS(5)
+  SPI.begin(13, 12, 14, 15); // map and init SPI pins SCK(13), MISO(12), MOSI(14), SS(15)
+  // *** end of special handling for Waveshare ESP32 Driver board *** //
+  // **************************************************************** //
+
   display.firstPage();
   do
   {
@@ -504,13 +565,11 @@ void setup() {
     drawDate();
     drawClock();
     drawIndoorTemperature();
-    if(! have_wifi){
-      drawErrorMsg("No WiFi connected!!");
-    }
     if(have_ntp){
       drawForecast();
       drawWeatherNow();
     }
+    drawErrorMsg();
   } while (display.nextPage());
 
   // delay(10000);
@@ -518,8 +577,6 @@ void setup() {
   // display.clearScreen();
   // delay(5000);
   // display.powerOff();
-  
-
 }
 
 void loop() {
