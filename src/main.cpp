@@ -65,7 +65,7 @@ GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ 1
 
 // Digital pin connected to the DHT sensor
 // #define DHTPIN 14
-#define DHTPIN 33
+#define DHTPIN 32
 #define DHTTYPE DHT22
 // Initialize DHT sensor.
 DHT dht(DHTPIN, DHTTYPE);
@@ -98,6 +98,7 @@ struct Weather forecast[6];
 bool have_wifi = false;
 bool have_ntp = false;
 bool have_rtc = false;
+bool have_rtc_battery = false;
 bool have_temperature_sensor = false;
 bool have_local_weather = false;
 bool have_fcast_weather = false;
@@ -125,14 +126,17 @@ String getTodayDateString(){
   if (Rtc.IsDateTimeValid()){
     RtcDateTime timeNow = Rtc.GetDateTime();
     char timeStringBuff[50]; //50 chars should be enough
-    snprintf(timeStringBuff, sizeof(timeStringBuff), "%u%u%u", timeNow.Year(), timeNow.Month(), timeNow.Day());
+    snprintf(timeStringBuff, sizeof(timeStringBuff), "%u%02u%02u", timeNow.Year(), timeNow.Month(), timeNow.Day());
     String dateNow(timeStringBuff);
     // Serial.println("Today's Date is ");
     // Serial.println(dateNow);
+    have_rtc_battery = true;
     return dateNow;
   }
   else
   {
+    // if return false means the battery is dead or the date and time has never been set
+    have_rtc_battery = false;
     return "";
   }
 } 
@@ -171,7 +175,7 @@ void getIndoorTemperature(){
   have_temperature_sensor = true;
 
   // Compute heat index in Celsius (isFahreheit = false)
-  float hic = dht.computeHeatIndex(t, h, false);
+  // float hic = dht.computeHeatIndex(t, h, false);
 
   indoor_humidity = h;
   indoor_temperature = t;
@@ -236,7 +240,6 @@ void drawDate(){
 void drawClock(){
   // if RTC has a valid time
   if (Rtc.IsDateTimeValid()){
-    
     // draw the clock
     RtcDateTime timeNow = Rtc.GetDateTime();
     char timeStringBuff[50]; //50 chars should be enough
@@ -368,6 +371,13 @@ void drawErrorMsg(){
     int y = 250 + (y_offset * cnt);
     display.setCursor(260 ,y);
     display.println("Real Time Clock not found!!");
+    cnt++;
+  }
+
+  if(!have_rtc_battery){
+    int y = 250 + (y_offset * cnt);
+    display.setCursor(260 ,y);
+    display.println("Real Time Clock battery is dead or the time is never set!!");
     cnt++;
   }
 
@@ -527,7 +537,7 @@ void setup() {
 
       // get local and all forcast weather info
       have_local_weather = get_local_weather(&local_weather_today);
-      have_fcast_weather = get_forecast_weather(local_weather_today, forecast);
+      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast);
       have_warn_weather = get_weather_warnings(weather_wanings);
 
       // Serial.println("------ Weather today ------");
@@ -546,10 +556,8 @@ void setup() {
   // get the indoor temperature from sensor
   getIndoorTemperature();
 
-
   // start to draw UI 
   einkSetup();
-  
 
   // *** special handling for Waveshare ESP32 Driver board *** //
   // ********************************************************* //

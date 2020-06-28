@@ -15,7 +15,7 @@ struct Weather {
 
 int fetch_weather(String url, DynamicJsonDocument* jsonDoc);
 bool get_local_weather(Weather *weather);
-bool get_forecast_weather(Weather today, Weather forcastDay[]);
+bool get_forecast_weather(Weather *today, Weather forcastDay[]);
 bool get_weather_warnings(String warnings[]);
 
 #endif

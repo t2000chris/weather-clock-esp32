@@ -69,7 +69,6 @@ bool get_weather_warnings(String warnings[]){
   JsonObject warnObj = doc[cnt];
 
   if (fetchWeatherOK){
-    Serial.println("Fetch warning OK");
     while(!warnObj.isNull()){
       // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
       while(cnt < 5){
@@ -132,7 +131,7 @@ bool get_local_weather(Weather *weather){
   }
 }
 
-bool get_forecast_weather(Weather today, Weather forecastDay[]){
+bool get_forecast_weather(Weather *today, Weather forecastDay[]){
   int fetchWeatherOK = 0;
   DynamicJsonDocument doc(7000);
   fetchWeatherOK = fetch_weather(url_forecast, &doc);
@@ -142,10 +141,16 @@ bool get_forecast_weather(Weather today, Weather forecastDay[]){
 
     String firstDayStr = doc["weatherForecast"][0]["forecastDate"];
 
+    // Serial.println("first day string is ");
+    // Serial.println(firstDayStr);
+    // Serial.println("today.date is ");
+    // Serial.println(today.date);
+
     // if the forecast for the first day is today, then we know the min max temperature
-    if (firstDayStr == today.date){
-      today.min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
-      today.max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
+    if (firstDayStr == today->date){
+      today->min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
+      today->max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
+
       // Serial.printf("Today max temperature : %d\nToday min temperature : %d\n", today.max_temp, today.min_temp );
       // start from the 2nd object
       dateCntOffset = 1;
