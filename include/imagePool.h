@@ -6,10 +6,13 @@
 
 // // define an array for all image numbers
 extern const int weatherIconList[];
+extern const String warningIconList[];
 extern const unsigned char *smallWeatherImages[];
 extern const unsigned char *bigWeatherImages[];
+extern const unsigned char *warnWeatherImages[];
 
 
 int findImageIndex(int weather_icon_number);
+int findImageIndex(String warningCode);
 
 #endif

@@ -2,9 +2,6 @@
 // enable or disable GxEPD2_GFX base class
 #define ENABLE_GxEPD2_GFX 0
 
-// #include "images/bigWeather.h"
-// #include "images/smallWeather.h"
-// #include "images/warnings.h"
 #include "images/system.h"
 #include "imagePool.h"
 
@@ -50,7 +47,6 @@ RtcDS3231<TwoWire> Rtc(Wire);
 // This is for nodemcu-32s pinout
 // GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4));
 
-
 // This is for Waveshare ESP32 eink driver board
 // There's some special handling (pin remap for this board)
 GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ 15, /*DC=*/ 27, /*RST=*/ 26, /*BUSY=*/ 25));
@@ -82,6 +78,7 @@ const long  gmtOffset_sec = 28800;
 const int   daylightOffset_sec = 3600;
 NTPClient timeClient(ntpUDP, ntpServer, gmtOffset_sec, 60000);
 
+// Use the chinese days below once I found a good font
 // String weekday_str[7] = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
 String weekday_str[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
@@ -229,7 +226,8 @@ void drawStaticUI(){
 void drawDate(){
   RtcDateTime timeNow = Rtc.GetDateTime();
   char timeStringBuff[50];
-  snprintf(timeStringBuff, sizeof(timeStringBuff), "%u/%u/%u %s", timeNow.Day(), timeNow.Month(), timeNow.Year(), weekday_str[timeNow.DayOfWeek()]);
+  // just put c_str() here to change from String to char* to avoid complie warning
+  snprintf(timeStringBuff, sizeof(timeStringBuff), "%u/%u/%u %s", timeNow.Day(), timeNow.Month(), timeNow.Year(), weekday_str[timeNow.DayOfWeek()].c_str());
   String dateNow_str(timeStringBuff);
   display.setFont(&DATE_FONT); 
   display.setCursor(25,50);
@@ -278,7 +276,6 @@ void drawWeatherNow(){
   int imgIndex;
   imgIndex = findImageIndex(local_weather_today.weather_icon);
   display.drawBitmap(410, 10, bigWeatherImages[imgIndex], 216, 216, GxEPD_BLACK);
-
   // draw temperature now
   display.setFont(&WEATHER_FONT);
   display.setCursor(630,155);
@@ -485,6 +482,7 @@ void runEverySecond(){
 }
 
 // we change the date at 0:00
+// FIXME - need to redraw everything since date changed
 void runEveryMidnite(){
   display.setPartialWindow(5, 1, 390, 60);
   display.firstPage();

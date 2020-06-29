@@ -65,26 +65,52 @@ bool get_weather_warnings(String warnings[]){
   int fetchWeatherOK = 0;
 
   fetchWeatherOK = fetch_weather(url_warnings, &doc);
-  int cnt = 0;
-  JsonObject warnObj = doc[cnt];
-
+  
   if (fetchWeatherOK){
-    while(!warnObj.isNull()){
-      // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
-      while(cnt < 5){
-        String warning_code = doc["code"];
-        Serial.println(warning_code);
-        warnings[cnt] = warning_code;
-        cnt++;
-        warnObj = doc[cnt];
-      }
+    // we don't know what keys we'll get here, all keys should have the same name as the warning code
+    // therefore we just go through the document root and extract all the keys (warning code)
+    JsonObject docRoot = doc.as<JsonObject>();
+
+    int cnt = 0;
+    for (JsonPair keyValue : docRoot) {
+        // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
+        if (cnt < 5){
+          Serial.println("We have weather warnings ---");
+          Serial.println(keyValue.key().c_str());
+          // all keys are in upper case
+          warnings[cnt] = keyValue.key().c_str();
+          cnt++;
+        }
     }
     return true;
   }
   else{
-    Serial.println("Error fetching warnings!!!");
+    Serial.println("Error fetching weather warnings!!!");
     return false;
   }
+  
+  // if (fetchWeatherOK){
+  //   Serial.println("fetch wanring OK");
+  //   int cnt = 0;
+  //   JsonObject warnObj = doc[cnt];
+
+  //   Serial.println(warnObj);
+  //   while(!warnObj.isNull()){
+  //     // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
+  //     while(cnt < 5){
+  //       String warning_code = warnObj["code"];
+  //       Serial.println(warning_code);
+  //       // warnings[cnt] = warning_code;
+  //       cnt++;
+  //       Serial.println("warning here");
+  //     }
+  //   }
+  //   return true;
+  // }
+  // else{
+  //   Serial.println("Error fetching warnings!!!");
+  //   return false;
+  // }
 }
 
 // return true if get weather ok
@@ -164,9 +190,9 @@ bool get_forecast_weather(Weather *today, Weather forecastDay[]){
 
       // get all weather information
       String fc_date = doc["weatherForecast"][dateCntOffset]["forecastDate"];
-      int fc_min_temp = doc["weatherForecast"][dateCntOffset]["forecastMintemp"]["value"];
-      int fc_max_temp = doc["weatherForecast"][dateCntOffset]["forecastMaxtemp"]["value"];
-      int fc_icon_num = doc["weatherForecast"][dateCntOffset]["ForecastIcon"];
+      // int fc_min_temp = doc["weatherForecast"][dateCntOffset]["forecastMintemp"]["value"];
+      // int fc_max_temp = doc["weatherForecast"][dateCntOffset]["forecastMaxtemp"]["value"];
+      // int fc_icon_num = doc["weatherForecast"][dateCntOffset]["ForecastIcon"];
 
       // store all weather information
       forecastDay[x].date = fc_date;

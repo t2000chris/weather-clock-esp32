@@ -7,6 +7,12 @@ extern const int weatherIconList[] = {50,51,52,53,54,
                                  80,81,82,83,84,85,
                                  90,91,92,93};
 
+extern const String warningIconList[] = {
+            "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNLTC1", "WMSGNLTC3",
+            "WMSGNLTC8NE", "WMSGNLTC8NW", "WMSGNLTC8SE", "WMSGNLTC8SW", "WMSGNLTC9", "WMSGNLTC10", 
+            "WRAINA", "WRAINB", "WRAINR", "WTCSGNL", "WTMW", "WTS"
+};
+
 extern const unsigned char* smallWeatherImages[] = {
             bm_smallWeather1, bm_smallWeather2, bm_smallWeather3, bm_smallWeather4, bm_smallWeather5,
             bm_smallWeather6, bm_smallWeather7, bm_smallWeather8, bm_smallWeather9, bm_smallWeather10,
@@ -14,7 +20,6 @@ extern const unsigned char* smallWeatherImages[] = {
             bm_smallWeather16, bm_smallWeather17, bm_smallWeather18, bm_smallWeather19, bm_smallWeather20, 
             bm_smallWeather21, bm_smallWeather22, bm_smallWeather23, bm_smallWeather24, bm_smallWeather25, 
             bm_smallWeather26, bm_smallWeather27, bm_smallWeather28, bm_smallWeather29};
-
 
 
 extern const unsigned char* bigWeatherImages[] = {
@@ -26,11 +31,30 @@ extern const unsigned char* bigWeatherImages[] = {
             bm_bigWeather26, bm_bigWeather27, bm_bigWeather28, bm_bigWeather29};
 
 
+extern const unsigned char* warnWeatherImages[] = {
+            bm_warnings1, bm_warnings2, bm_warnings3, bm_warnings4, bm_warnings5,
+            bm_warnings6, bm_warnings7, bm_warnings8, bm_warnings9, bm_warnings10,
+            bm_warnings11, bm_warnings12, bm_warnings13, bm_warnings14, bm_warnings15, 
+            bm_warnings16, bm_warnings17, bm_warnings18, bm_warnings19, bm_warnings20, 
+            bm_warnings21
+};
+
 
 int findImageIndex(int weather_icon_number){
     int imgIndex = -1;
     for(int n=0; n < 29; n++){
       if(weatherIconList[n] == weather_icon_number){
+        imgIndex = n;
+        return imgIndex;
+      }
+    }
+    return imgIndex;
+}
+
+int findImageIndex(String warningCode){
+  int imgIndex = -1;
+  for(int n=0; n < 21; n++){
+      if(warningIconList[n] == warningCode){
         imgIndex = n;
         return imgIndex;
       }
