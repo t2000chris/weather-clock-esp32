@@ -72,15 +72,14 @@ bool get_weather_warnings(String warnings[]){
     JsonObject docRoot = doc.as<JsonObject>();
 
     int cnt = 0;
+
+    // we put all warnings in to the warnings[] although we can only display max 4 warnings
+    // the UI drawing function will handle it
     for (JsonPair keyValue : docRoot) {
-        // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
-        if (cnt < 5){
-          Serial.println("We have weather warnings ---");
-          Serial.println(keyValue.key().c_str());
-          // all keys are in upper case
-          warnings[cnt] = keyValue.key().c_str();
-          cnt++;
-        }
+      // all keys are in upper case
+      String wcode = keyValue.value().getMember("code");
+      warnings[cnt] = wcode;
+      cnt++;
     }
     return true;
   }

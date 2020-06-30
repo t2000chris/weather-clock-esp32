@@ -351,6 +351,25 @@ void drawForecast(){
   }
 }
 
+// we can draw max of 5 warnings
+void drawWeatherWarnings(){
+  int cnt = 0;
+  int imgIndex;
+  int xoffset = 93;
+  int x;
+
+  // in the current UI design, can only display 4 warings max
+  while(weather_wanings[cnt] != NULL && cnt < 4){
+    // Serial.println("got warnings");
+    // Serial.println(weather_wanings[cnt]);
+
+    x = 260 + (xoffset*cnt);
+    imgIndex = findImageIndex(weather_wanings[cnt]);
+    display.drawBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
+    cnt++;
+  }
+}
+
 void drawErrorMsg(){
   int cnt = 0;
   int y_offset = 17;
@@ -484,7 +503,11 @@ void runEverySecond(){
 // we change the date at 0:00
 // FIXME - need to redraw everything since date changed
 void runEveryMidnite(){
-  display.setPartialWindow(5, 1, 390, 60);
+  // display.setPartialWindow(5, 1, 390, 60);
+
+  setTimeWithNTP();
+
+
   display.firstPage();
   do
   {
@@ -550,6 +573,7 @@ void setup() {
     }
   }
 
+
   // these task are not internet related
   // get the indoor temperature from sensor
   getIndoorTemperature();
@@ -574,6 +598,7 @@ void setup() {
     if(have_ntp){
       drawForecast();
       drawWeatherNow();
+      drawWeatherWarnings();
     }
     drawErrorMsg();
   } while (display.nextPage());
@@ -583,6 +608,7 @@ void setup() {
   // display.clearScreen();
   // delay(5000);
   // display.powerOff();
+
 }
 
 void loop() {
