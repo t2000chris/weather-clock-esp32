@@ -25,6 +25,7 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   String payload;
   Serial.println("Start getting info from web");
   Serial.println(url);
+  
   http.begin(url);
 
   // start connect 
@@ -33,7 +34,7 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   // if we get a reply from server
   if(httpCode > 0){
     // print out the http return code
-    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    // Serial.printf("[HTTP] GET... code: %d\n", httpCode);
 
     // if we successfully get the file from web
     // then we put the sting in JSON objects
@@ -73,12 +74,13 @@ bool get_weather_warnings(String warnings[]){
 
     int cnt = 0;
 
-    // we put all warnings in to the warnings[] although we can only display max 4 warnings
+    // we put all warnings in to the warnings[] although we can only display max 5 warnings
     // the UI drawing function will handle it
     for (JsonPair keyValue : docRoot) {
+      Serial.println("We have new weather warnings.");
       // all keys are in upper case
       String wcode = keyValue.value().getMember("code");
-      warnings[cnt] = wcode;
+      warnings[cnt] = wcode;     
       cnt++;
     }
     return true;
@@ -87,33 +89,10 @@ bool get_weather_warnings(String warnings[]){
     Serial.println("Error fetching weather warnings!!!");
     return false;
   }
-  
-  // if (fetchWeatherOK){
-  //   Serial.println("fetch wanring OK");
-  //   int cnt = 0;
-  //   JsonObject warnObj = doc[cnt];
-
-  //   Serial.println(warnObj);
-  //   while(!warnObj.isNull()){
-  //     // we only get the first 5 warnings, since our e-ink UI design can only display a maximum of 5 warnings
-  //     while(cnt < 5){
-  //       String warning_code = warnObj["code"];
-  //       Serial.println(warning_code);
-  //       // warnings[cnt] = warning_code;
-  //       cnt++;
-  //       Serial.println("warning here");
-  //     }
-  //   }
-  //   return true;
-  // }
-  // else{
-  //   Serial.println("Error fetching warnings!!!");
-  //   return false;
-  // }
 }
 
 // return true if get weather ok
-bool get_local_weather(Weather *weather){
+bool get_local_weather(Weather *weather, bool &haveNewData){
   // size for 9 days forecast is the largest, and it should be around 6200 bytes
   DynamicJsonDocument doc(7000);
   int fetchWeatherOK = 0;
@@ -124,94 +103,107 @@ bool get_local_weather(Weather *weather){
     // loop through to find the area we're interested
     int cnt = 0;
     JsonObject areaObj = doc["temperature"]["data"][cnt];
+    JsonObject root = doc.as<JsonObject>();
 
-    while(!areaObj.isNull()){
-      String areaStr = areaObj["place"];
-      if ( areaObj["place"] == local_name){
+    // get the update time
+    String updateTime = root.getMember("updateTime");
 
-        char charbuf[50];
-        local_name.toCharArray(charbuf, 50);
-        // Serial.printf("Found %s\n", charbuf);
-        
-        weather->temperature = areaObj["value"];
-        // Serial.printf("Local temperature is %d\n", weather.temperature);
-        break;
+    // only process the weather data if the update time is different than last time
+    if(weather->update_time != updateTime){
+      haveNewData = true;
+      while(!areaObj.isNull()){
+        String areaStr = areaObj["place"];
+        if ( areaObj["place"] == local_name){
+
+          char charbuf[50];
+          local_name.toCharArray(charbuf, 50);
+          // Serial.printf("Found %s\n", charbuf);
+          
+          weather->temperature = areaObj["value"];
+          // Serial.printf("Local temperature is %d\n", weather.temperature);
+
+          // store the new update time
+          weather->update_time = updateTime;
+
+          break;
+        }
+        else {
+          cnt++;
+          areaObj = doc["temperature"]["data"][cnt];
+        } 
       }
-      else {
-        cnt++;
-        areaObj = doc["temperature"]["data"][cnt];
-      } 
+
+      // there's only one humidity reading from observatory
+      weather->humidity = doc["humidity"]["data"][0]["value"];
+      // get the weather icon number (need fix for using the 1st item only?)
+      weather->weather_icon = doc["icon"][0];
+
+      // Serial.printf("Local humidity : %d\nLocal weather icon : %d\n", weather.humidity, weather.weather_icon);
     }
-
-    // there's only one humidity reading from observatory
-    weather->humidity = doc["humidity"]["data"][0]["value"];
-    // get the weather icon number (need fix for using the 1st item only?)
-    weather->weather_icon = doc["icon"][0];
-
-    // Serial.printf("Local humidity : %d\nLocal weather icon : %d\n", weather.humidity, weather.weather_icon);
+    // return true if we can get data from internet
     return true;
   }
-  else{
-    return false;
-  }
+  
+  // return false if no data
+  return false;
 }
 
-bool get_forecast_weather(Weather *today, Weather forecastDay[]){
+// get the next 6 days forecast, also get today's forecast for min and max temperature
+bool get_forecast_weather(Weather *today, Weather forecastDay[], bool &haveNewData){
   int fetchWeatherOK = 0;
   DynamicJsonDocument doc(7000);
   fetchWeatherOK = fetch_weather(url_forecast, &doc);
 
   if (fetchWeatherOK) {
-    int dateCntOffset = 0;
+    // get the update time
+    JsonObject root = doc.as<JsonObject>();
+    String updateTime = root.getMember("updateTime");
 
-    String firstDayStr = doc["weatherForecast"][0]["forecastDate"];
+    // only process the weather data if the update time is different than last time
+    if(forecastDay[0].update_time != updateTime){
+      haveNewData = true;
+      int dateCntOffset = 0;
 
-    // Serial.println("first day string is ");
-    // Serial.println(firstDayStr);
-    // Serial.println("today.date is ");
-    // Serial.println(today.date);
+      String firstDayStr = doc["weatherForecast"][0]["forecastDate"];
 
-    // if the forecast for the first day is today, then we know the min max temperature
-    if (firstDayStr == today->date){
-      today->min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
-      today->max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
+      // if the forecast for the first day is today, then we know the min max temperature
+      if (firstDayStr == today->date){
+        today->min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
+        today->max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
 
-      // Serial.printf("Today max temperature : %d\nToday min temperature : %d\n", today.max_temp, today.min_temp );
-      // start from the 2nd object
-      dateCntOffset = 1;
-    }
-    else {
-      Serial.println("Can't find today's forecast from the web.");
-    }
+        // Serial.printf("Today max temperature : %d\nToday min temperature : %d\n", today.max_temp, today.min_temp );
+        // start from the 2nd object
+        dateCntOffset = 1;
+      }
+      else {
+        Serial.println("Can't find today's forecast from the web.");
+      }
 
-    // we only do 6 day forecast
-    for(int x=0; x<6; x++){
+      // we only do 6 day forecast
+      for(int x=0; x<6; x++){
 
-      // get all weather information
-      String fc_date = doc["weatherForecast"][dateCntOffset]["forecastDate"];
-      // int fc_min_temp = doc["weatherForecast"][dateCntOffset]["forecastMintemp"]["value"];
-      // int fc_max_temp = doc["weatherForecast"][dateCntOffset]["forecastMaxtemp"]["value"];
-      // int fc_icon_num = doc["weatherForecast"][dateCntOffset]["ForecastIcon"];
+        // get all weather information
+        String fc_date = doc["weatherForecast"][dateCntOffset]["forecastDate"];
 
-      // store all weather information
-      forecastDay[x].date = fc_date;
-      forecastDay[x].min_temp = doc["weatherForecast"][dateCntOffset]["forecastMintemp"]["value"];
-      forecastDay[x].max_temp = doc["weatherForecast"][dateCntOffset]["forecastMaxtemp"]["value"];
-      forecastDay[x].weather_icon = doc["weatherForecast"][dateCntOffset]["ForecastIcon"];
+        // store all weather information
+        forecastDay[x].date = fc_date;
+        forecastDay[x].min_temp = doc["weatherForecast"][dateCntOffset]["forecastMintemp"]["value"];
+        forecastDay[x].max_temp = doc["weatherForecast"][dateCntOffset]["forecastMaxtemp"]["value"];
+        forecastDay[x].weather_icon = doc["weatherForecast"][dateCntOffset]["ForecastIcon"];
+        forecastDay[x].update_time = updateTime;
 
-      char charbuf[50];
-      fc_date.toCharArray(charbuf, 50);
-      // Serial.println("------ Weather forecast ------");
-      // Serial.printf("Date : %s\nMin Temp : %d\nMax Temp : %d\nIcon Num : %d\n\n",
-      //               charbuf, fc_min_temp, fc_max_temp, fc_icon_num);
+        // char charbuf[50];
+        // fc_date.toCharArray(charbuf, 50);
+        // Serial.println("------ Weather forecast ------");
+        // Serial.printf("Date : %s\nMin Temp : %d\nMax Temp : %d\nIcon Num : %d\n\n",
+        //               charbuf, fc_min_temp, fc_max_temp, fc_icon_num);
 
-      dateCntOffset++;
+        dateCntOffset++;
+      }
     }
     return true;
   }
-  else
-  {
-    return false;
-  }
+  return false;
+
   
 }

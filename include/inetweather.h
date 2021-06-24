@@ -11,11 +11,12 @@ struct Weather {
     int min_temp;
     int weather_icon;
     int humidity;
+    String update_time;
 };
 
 int fetch_weather(String url, DynamicJsonDocument* jsonDoc);
-bool get_local_weather(Weather *weather);
-bool get_forecast_weather(Weather *today, Weather forcastDay[]);
+bool get_local_weather(Weather *weather, bool &haveNewData);
+bool get_forecast_weather(Weather *today, Weather forcastDay[], bool &haveNewData);
 bool get_weather_warnings(String warnings[]);
 
 #endif

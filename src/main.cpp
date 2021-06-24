@@ -117,6 +117,7 @@ void connectWifi()
   }
 }
 
+
 // this is to create a "today" string to search the forecast from the weather info
 String getTodayDateString(){
   // Construct a date string like "20191125" for searching in JSON 
@@ -153,7 +154,6 @@ bool setTimeWithNTP()
     return false;
   }
 }
-
 
 
 void getIndoorTemperature(){
@@ -246,6 +246,8 @@ void drawClock(){
     display.setFont(&CLOCK_FONT);
     display.setCursor(5,200);
     display.print(timeNow_str);
+    
+    Serial.printf("Time update: %s", timeNow_str);
   }
 }
 
@@ -366,6 +368,8 @@ void drawWeatherWarnings(){
     x = 260 + (xoffset*cnt);
     imgIndex = findImageIndex(weather_wanings[cnt]);
     display.drawBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
+    // display.drawGrayscaleBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
+
     cnt++;
   }
 }
@@ -465,7 +469,53 @@ void i2cScanner(){
 
 }
 
+void fetchEverything(){
+  setTimeWithNTP();
+  local_weather_today.date = getTodayDateString();
+  // get local and all forcast weather info
+  // dummy bool
+  bool dummy;
+  have_local_weather = get_local_weather(&local_weather_today, dummy);
+  have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
+  have_warn_weather = get_weather_warnings(weather_wanings);
+  getIndoorTemperature();
+}
 
+// clear screen and redraw everything
+void redrawEverything(){
+  // setTimeWithNTP();
+  // local_weather_today.date = getTodayDateString();
+  // // get local and all forcast weather info
+  // // dummy bool
+  // bool dummy;
+  // have_local_weather = get_local_weather(&local_weather_today);
+  // have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, &dummy);
+  // have_warn_weather = get_weather_warnings(weather_wanings);
+  // getIndoorTemperature();
+  
+  display.clearScreen();
+  display.setFullWindow();
+  display.firstPage();
+  do
+  {
+    drawStaticUI();
+    drawDate();
+    drawClock();
+    drawIndoorTemperature();
+    if(have_ntp){
+      drawForecast();
+      drawWeatherNow();
+      drawWeatherWarnings();
+    }
+    drawErrorMsg();
+  } while (display.nextPage());
+}
+
+// fetch all data and redraw everything
+void fetchAndRedrawEverything(){
+  fetchEverything();
+  redrawEverything();
+}
 
 void runEverySecond(){
   // if( digitalRead(ONBOARD_LED) ){
@@ -479,44 +529,87 @@ void runEverySecond(){
 
   RtcDateTime timeNow = Rtc.GetDateTime();
   if (timeNow.Second() == 0){
-    // Serial.println("1 min, redraw the clock");
+    // In midnight, we fetch all data and redraw everything
+    if(timeNow.Hour() == 0 && timeNow.Minute() == 0){
+      fetchAndRedrawEverything();
+      return;
+    }
 
-    // update the clock
-    display.setPartialWindow(5, 80, 390, 130);
-    display.firstPage();
-    do
-    {
-      display.fillScreen(GxEPD_WHITE);
-      drawClock();
-    } while (display.nextPage());
+    bool haveNewData_local = false;
+    bool haveNewData_forecast = false;
 
-    // update indoor temperature
-    display.setPartialWindow(173, 235, 42, 90);
-    do
-    {
-      display.fillScreen(GxEPD_WHITE);
-      drawIndoorTemperature();
-    } while (display.nextPage());
+    // for every hour fetch local weather, forecast, warning and indoor temperature
+    if(timeNow.Minute() == 0){
+      have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
+      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
+      have_warn_weather = get_weather_warnings(weather_wanings);
+      getIndoorTemperature();
+    }
+    // for every 5 mins, we fetch warning and indoor temperature
+    else if(timeNow.Minute() % 5 == 0){
+      have_warn_weather = get_weather_warnings(weather_wanings);
+      getIndoorTemperature();
+    }
+
+
+    // redraw everything if we have new weather data
+    if(haveNewData_local || haveNewData_forecast){
+        Serial.println("We have weather update");
+        redrawEverything();
+    }
+    // otherwise just update the time and indoor temperature
+    else{
+
+      // For every 30 mins -------------
+      // Since this eink doesn't support partial update, it'll start acting wierd if we keep doing partial update
+      // so we just redraw the whole screen every 30 mins
+      if(timeNow.Minute() % 30 == 0){
+        redrawEverything();
+      }
+
+      // For every 5 mins -------------
+      // update indoor temperature
+      else if(timeNow.Minute() % 5 == 0){
+        display.setPartialWindow(173, 235, 42, 90);
+        do
+        {
+          display.fillScreen(GxEPD_WHITE);
+          drawIndoorTemperature();
+        } while (display.nextPage());
+      
+
+        // update weather warnings
+        display.setPartialWindow(260, 238, 370, 90);
+        do
+        {
+          display.fillScreen(GxEPD_WHITE);
+          drawWeatherWarnings();
+        } while (display.nextPage());
+
+        // update clock 
+        display.setPartialWindow(5, 80, 390, 130);
+        display.firstPage();
+        do
+        {
+          display.fillScreen(GxEPD_WHITE);
+          drawClock();
+        } while (display.nextPage());
+      }
+
+      else {
+        // For every 1 min ------------
+        // update clock 
+        display.setPartialWindow(5, 80, 390, 130);
+        display.firstPage();
+        do
+        {
+          display.fillScreen(GxEPD_WHITE);
+          drawClock();
+        } while (display.nextPage());
+      }
+    }
   }
 }
-
-// we change the date at 0:00
-// FIXME - need to redraw everything since date changed
-void runEveryMidnite(){
-  // display.setPartialWindow(5, 1, 390, 60);
-
-  setTimeWithNTP();
-
-
-  display.firstPage();
-  do
-  {
-    display.fillScreen(GxEPD_WHITE);
-    drawDate();
-  } while (display.nextPage());
-}
-
-
 
 void setup() {
   Serial.begin(115200);
@@ -537,9 +630,11 @@ void setup() {
   // run the function every second.  I wanna use this lib instead of playing with hardware clock in esp32
   Alarm.timerRepeat(1, runEverySecond);
   // change date every 00:00
-  Alarm.alarmRepeat(0,0,0,runEveryMidnite);
+  // Alarm.alarmRepeat(0,0,0,fetchAndRedrawEverything);
 
-  // Alarm.timerRepeat(20, updateIndoorTemperature);
+  /**************** Test alarm */
+  // Alarm.timerRepeat(30, fetchAndDrawEverything);
+
 
   // do all internet tasks if we have wifi.
   if (have_wifi) {
@@ -557,8 +652,10 @@ void setup() {
       local_weather_today.date = getTodayDateString();
 
       // get local and all forcast weather info
-      have_local_weather = get_local_weather(&local_weather_today);
-      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast);
+      // dummy bool
+      bool dummy = false;
+      have_local_weather = get_local_weather(&local_weather_today, dummy);
+      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
       have_warn_weather = get_weather_warnings(weather_wanings);
 
       // Serial.println("------ Weather today ------");
@@ -588,27 +685,28 @@ void setup() {
   // *** end of special handling for Waveshare ESP32 Driver board *** //
   // **************************************************************** //
 
-  display.firstPage();
-  do
-  {
-    drawStaticUI();
-    drawDate();
-    drawClock();
-    drawIndoorTemperature();
-    if(have_ntp){
-      drawForecast();
-      drawWeatherNow();
-      drawWeatherWarnings();
-    }
-    drawErrorMsg();
-  } while (display.nextPage());
+  // display.firstPage();
+  // do
+  // {
+  //   drawStaticUI();
+  //   drawDate();
+  //   drawClock();
+  //   drawIndoorTemperature();
+  //   if(have_ntp){
+  //     drawForecast();
+  //     drawWeatherNow();
+  //     drawWeatherWarnings();
+  //   }
+  //   drawErrorMsg();
+  // } while (display.nextPage());
+
+  redrawEverything();
 
   // delay(10000);
   // display.println("Clear screen");
   // display.clearScreen();
   // delay(5000);
   // display.powerOff();
-
 }
 
 void loop() {
