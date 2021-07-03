@@ -74,9 +74,18 @@ bool get_weather_warnings(String warnings[]){
 
     int cnt = 0;
 
+    // clear existing warnings
+    while(cnt < 4){
+      warnings[cnt] = "";
+      cnt++;
+    }
+    cnt = 0;
+
     // we put all warnings in to the warnings[] although we can only display max 5 warnings
-    // the UI drawing function will handle it
     for (JsonPair keyValue : docRoot) {
+      if (cnt == 5){
+        break;
+      }
       Serial.println("We have new weather warnings.");
       // all keys are in upper case
       String wcode = keyValue.value().getMember("code");

@@ -560,10 +560,10 @@ void runEverySecond(){
     // otherwise just update the time and indoor temperature
     else{
 
-      // For every 30 mins -------------
+      // For every 60 mins -------------
       // Since this eink doesn't support partial update, it'll start acting wierd if we keep doing partial update
-      // so we just redraw the whole screen every 30 mins
-      if(timeNow.Minute() % 30 == 0){
+      // so we just redraw the whole screen every 60 mins
+      if(timeNow.Minute() == 0){
         redrawEverything();
       }
 
@@ -598,6 +598,13 @@ void runEverySecond(){
 
       else {
         // For every 1 min ------------
+        // if initially we don't have wifi, we'll connect every min
+        if(have_wifi == false){
+            connectWifi();
+            // check if we can connect, if so we get all the data from internet
+            // GOTTA FIX THIS
+        }
+
         // update clock 
         display.setPartialWindow(5, 80, 390, 130);
         display.firstPage();
