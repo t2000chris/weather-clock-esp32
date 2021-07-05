@@ -61,11 +61,14 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   return 1;
 }
 
-bool get_weather_warnings(String warnings[]){
+bool get_weather_warnings(String warnings[], bool &haveNewData){
   DynamicJsonDocument doc(7000);
   int fetchWeatherOK = 0;
 
   fetchWeatherOK = fetch_weather(url_warnings, &doc);
+  
+  // For test graphics only
+  // fetchWeatherOK = fetch_weather("http://192.168.2.22/weather_warning.txt", &doc);
   
   if (fetchWeatherOK){
     // we don't know what keys we'll get here, all keys should have the same name as the warning code
@@ -74,25 +77,70 @@ bool get_weather_warnings(String warnings[]){
 
     int cnt = 0;
 
-    // clear existing warnings
-    while(cnt < 4){
-      warnings[cnt] = "";
-      cnt++;
-    }
-    cnt = 0;
+    // // clear existing warnings
+    // while(cnt < 4){
+    //   warnings[cnt] = "";
+    //   cnt++;
+    // }
+    // cnt = 0;
 
-    // we put all warnings in to the warnings[] although we can only display max 5 warnings
+    // // we put all warnings in to the warnings[] although we can only display max 4 warnings
+    // for (JsonPair keyValue : docRoot) {
+    //   if (cnt == 4){
+    //     break;
+    //   }
+    //   Serial.println("We have weather warnings.");
+    //   // all keys are in upper case
+    //   String wcode = keyValue.value().getMember("code");
+    //   warnings[cnt] = wcode;     
+    //   cnt++;
+    // }
+    // return true;
+
+    // test code here -----------------------------------------
+    String new_wcode[4];
+
+    // we put all warnings in to the warnings[] although we can only display max 4 warnings
     for (JsonPair keyValue : docRoot) {
-      if (cnt == 5){
+      if (cnt == 4){
         break;
       }
-      Serial.println("We have new weather warnings.");
+      
       // all keys are in upper case
       String wcode = keyValue.value().getMember("code");
-      warnings[cnt] = wcode;     
+      new_wcode[cnt] = wcode;     
+      cnt++;
+      Serial.println("We have weather warnings.");
+      Serial.println(wcode);
+    }
+
+    cnt = 0;
+    haveNewData = false;
+    // check if the existing warning are the same
+    while(cnt < 4){
+      if(warnings[cnt] != new_wcode[cnt]){
+        haveNewData = true;
+        break;
+      }
       cnt++;
     }
+
+    
+    // see if we have new warnings
+    if(haveNewData){
+      Serial.println("We have weather warning updates.");
+      
+      cnt = 0;
+      while(cnt < 4){
+        warnings[cnt] = new_wcode[cnt];
+        cnt++;
+      }
+    }
+    else{
+      Serial.println("Same weather warnings, no updates will be made.");
+    }
     return true;
+
   }
   else{
     Serial.println("Error fetching weather warnings!!!");

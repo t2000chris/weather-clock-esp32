@@ -8,7 +8,7 @@ extern const int weatherIconList[] = {50,51,52,53,54,
                                  90,91,92,93};
 
 extern const String warningIconList[] = {
-            "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNLTC1", "WMSGNLTC3",
+            "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNL", "WMSGNLTC1", "WMSGNLTC3",
             "WMSGNLTC8NE", "WMSGNLTC8NW", "WMSGNLTC8SE", "WMSGNLTC8SW", "WMSGNLTC9", "WMSGNLTC10", 
             "WRAINA", "WRAINB", "WRAINR", "WTCSGNL", "WTMW", "WTS"
 };
@@ -31,12 +31,36 @@ extern const unsigned char* bigWeatherImages[] = {
             bm_bigWeather26, bm_bigWeather27, bm_bigWeather28, bm_bigWeather29};
 
 
+// all images generate here
+// https://javl.github.io/image2cpp/
 extern const unsigned char* warnWeatherImages[] = {
-            bm_warnings1, bm_warnings2, bm_warnings3, bm_warnings4, bm_warnings5,
-            bm_warnings6, bm_warnings7, bm_warnings8, bm_warnings9, bm_warnings10,
-            bm_warnings11, bm_warnings12, bm_warnings13, bm_warnings14, bm_warnings15, 
-            bm_warnings16, bm_warnings17, bm_warnings18, bm_warnings19, bm_warnings20, 
-            bm_warnings21
+            // bm_warnings1, bm_warnings2, bm_warnings3, bm_warnings4, bm_warnings5,
+            // bm_warnings6, bm_warnings7, bm_warnings8, bm_warnings9, bm_warnings10,
+            // bm_warnings11, bm_warnings12, bm_warnings13, bm_warnings14, bm_warnings15, 
+            // bm_warnings16, bm_warnings17, bm_warnings18, bm_warnings19, bm_warnings20, 
+            // bm_warnings21, bm_warnings21
+            bm_warningswcold,
+            bm_warningswfirer,
+            bm_warningswfirey,
+            bm_warningswfntsa,
+            bm_warningswfrost,
+            bm_warningswhot,
+            bm_warningswl,
+            bm_warningswmsgnl,
+            bm_warningswmsgnltc1,
+            bm_warningswmsgnltc10,
+            bm_warningswmsgnltc3,
+            bm_warningswmsgnltc8ne,
+            bm_warningswmsgnltc8nw,
+            bm_warningswmsgnltc8se,
+            bm_warningswmsgnltc8sw,
+            bm_warningswmsgnltc9,
+            bm_warningswraina,
+            bm_warningswrainb,
+            bm_warningswrainr,
+            bm_warningswtcsgnl,
+            bm_warningswtmw,
+            bm_warningswts
 };
 
 

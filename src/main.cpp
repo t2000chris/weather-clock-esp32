@@ -85,8 +85,8 @@ String weekday_str[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 int indoor_humidity = 0;
 int indoor_temperature = 0;
 
-// we can only show a maximum of 5 warnings in our e-ink display
-String weather_wanings[5];
+// we can only show a maximum of 4 warnings in our e-ink display
+String weather_warnings[4];
 
 struct Weather local_weather_today;
 struct Weather forecast[6];
@@ -247,7 +247,7 @@ void drawClock(){
     display.setCursor(5,200);
     display.print(timeNow_str);
     
-    Serial.printf("Time update: %s", timeNow_str);
+    Serial.printf("Time update: %s\n", timeNow_str);
   }
 }
 
@@ -361,12 +361,12 @@ void drawWeatherWarnings(){
   int x;
 
   // in the current UI design, can only display 4 warings max
-  while(weather_wanings[cnt] != NULL && cnt < 4){
+  while(weather_warnings[cnt] != NULL && cnt < 4){
     // Serial.println("got warnings");
     // Serial.println(weather_wanings[cnt]);
 
     x = 260 + (xoffset*cnt);
-    imgIndex = findImageIndex(weather_wanings[cnt]);
+    imgIndex = findImageIndex(weather_warnings[cnt]);
     display.drawBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
     // display.drawGrayscaleBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
 
@@ -477,21 +477,12 @@ void fetchEverything(){
   bool dummy;
   have_local_weather = get_local_weather(&local_weather_today, dummy);
   have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
-  have_warn_weather = get_weather_warnings(weather_wanings);
+  have_warn_weather = get_weather_warnings(weather_warnings, dummy);
   getIndoorTemperature();
 }
 
 // clear screen and redraw everything
 void redrawEverything(){
-  // setTimeWithNTP();
-  // local_weather_today.date = getTodayDateString();
-  // // get local and all forcast weather info
-  // // dummy bool
-  // bool dummy;
-  // have_local_weather = get_local_weather(&local_weather_today);
-  // have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, &dummy);
-  // have_warn_weather = get_weather_warnings(weather_wanings);
-  // getIndoorTemperature();
   
   display.clearScreen();
   display.setFullWindow();
@@ -537,24 +528,25 @@ void runEverySecond(){
 
     bool haveNewData_local = false;
     bool haveNewData_forecast = false;
+    bool haveNewData_warnings = false;
 
     // for every hour fetch local weather, forecast, warning and indoor temperature
     if(timeNow.Minute() == 0){
       have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
       have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
-      have_warn_weather = get_weather_warnings(weather_wanings);
+      have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
       getIndoorTemperature();
     }
     // for every 5 mins, we fetch warning and indoor temperature
     else if(timeNow.Minute() % 5 == 0){
-      have_warn_weather = get_weather_warnings(weather_wanings);
+      have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
       getIndoorTemperature();
     }
 
 
     // redraw everything if we have new weather data
-    if(haveNewData_local || haveNewData_forecast){
-        Serial.println("We have weather update");
+    if(haveNewData_local || haveNewData_forecast || haveNewData_warnings){
+        Serial.println("We have weather updates");
         redrawEverything();
     }
     // otherwise just update the time and indoor temperature
@@ -564,7 +556,7 @@ void runEverySecond(){
       // Since this eink doesn't support partial update, it'll start acting wierd if we keep doing partial update
       // so we just redraw the whole screen every 60 mins
       if(timeNow.Minute() == 0){
-        redrawEverything();
+        fetchAndRedrawEverything();
       }
 
       // For every 5 mins -------------
@@ -601,8 +593,14 @@ void runEverySecond(){
         // if initially we don't have wifi, we'll connect every min
         if(have_wifi == false){
             connectWifi();
-            // check if we can connect, if so we get all the data from internet
-            // GOTTA FIX THIS
+
+            // get all internet data if we have wifi
+            if(have_wifi == true){
+              // and do a full screen update
+              // no need to redraw the clock, just return here
+              fetchAndRedrawEverything();
+              return;
+            }
         }
 
         // update clock 
@@ -613,6 +611,13 @@ void runEverySecond(){
           display.fillScreen(GxEPD_WHITE);
           drawClock();
         } while (display.nextPage());
+
+        //////////////// Test ////////////////////////////
+        // bool got_new_warnings; 
+        // have_warn_weather = get_weather_warnings(weather_warnings, got_new_warnings);
+        // if(got_new_warnings){
+        //   redrawEverything();
+        // }
       }
     }
   }
@@ -663,7 +668,7 @@ void setup() {
       bool dummy = false;
       have_local_weather = get_local_weather(&local_weather_today, dummy);
       have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
-      have_warn_weather = get_weather_warnings(weather_wanings);
+      have_warn_weather = get_weather_warnings(weather_warnings, dummy);
 
       // Serial.println("------ Weather today ------");
       //   Serial.printf("Date : %s\nTemp : %d\nHumidity : %d\nIcon Num : %d\n\n",
