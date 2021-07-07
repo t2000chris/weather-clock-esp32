@@ -48,13 +48,13 @@ extern const unsigned char* warnWeatherImages[] = {
             bm_warningswl,
             bm_warningswmsgnl,
             bm_warningswmsgnltc1,
-            bm_warningswmsgnltc10,
             bm_warningswmsgnltc3,
             bm_warningswmsgnltc8ne,
             bm_warningswmsgnltc8nw,
             bm_warningswmsgnltc8se,
             bm_warningswmsgnltc8sw,
             bm_warningswmsgnltc9,
+            bm_warningswmsgnltc10,
             bm_warningswraina,
             bm_warningswrainb,
             bm_warningswrainr,
@@ -77,7 +77,7 @@ int findImageIndex(int weather_icon_number){
 
 int findImageIndex(String warningCode){
   int imgIndex = -1;
-  for(int n=0; n < 21; n++){
+  for(int n=0; n < 22; n++){
       if(warningIconList[n] == warningCode){
         imgIndex = n;
         return imgIndex;

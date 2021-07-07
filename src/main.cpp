@@ -367,9 +367,14 @@ void drawWeatherWarnings(){
 
     x = 260 + (xoffset*cnt);
     imgIndex = findImageIndex(weather_warnings[cnt]);
-    display.drawBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
-    // display.drawGrayscaleBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
-
+    // if we can find the image
+    if (imgIndex != -1){
+      display.drawBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90, GxEPD_BLACK);
+      // display.drawGrayscaleBitmap(x, 238, warnWeatherImages[imgIndex], 90, 90);
+    }
+    else {
+      Serial.print("Cannot find warning image!!");
+    }
     cnt++;
   }
 }

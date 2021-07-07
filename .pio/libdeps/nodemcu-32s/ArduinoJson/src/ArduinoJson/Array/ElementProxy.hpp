@@ -1,5 +1,5 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2020
+// ArduinoJson - https://arduinojson.org
+// Copyright Benoit Blanchon 2014-2021
 // MIT License
 
 #pragma once
@@ -10,8 +10,8 @@
 #include <ArduinoJson/Variant/VariantTo.hpp>
 
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4522)
+#  pragma warning(push)
+#  pragma warning(disable : 4522)
 #endif
 
 namespace ARDUINOJSON_NAMESPACE {
@@ -65,8 +65,16 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
   }
 
   template <typename T>
-  FORCE_INLINE typename VariantAs<T>::type as() const {
+  FORCE_INLINE typename enable_if<!is_same<T, char*>::value, T>::type as()
+      const {
     return getUpstreamElement().template as<T>();
+  }
+
+  template <typename T>
+  FORCE_INLINE typename enable_if<is_same<T, char*>::value, const char*>::type
+  ARDUINOJSON_DEPRECATED("Replace as<char*>() with as<const char*>()")
+      as() const {
+    return as<const char*>();
   }
 
   template <typename T>
@@ -170,6 +178,10 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
     return _array.getOrAddElement(_index);
   }
 
+  friend bool convertToJson(const this_type& src, VariantRef dst) {
+    return dst.set(src.getUpstreamElement());
+  }
+
   TArray _array;
   const size_t _index;
 };
@@ -177,5 +189,5 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
 }  // namespace ARDUINOJSON_NAMESPACE
 
 #ifdef _MSC_VER
-#pragma warning(pop)
+#  pragma warning(pop)
 #endif

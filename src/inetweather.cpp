@@ -110,8 +110,8 @@ bool get_weather_warnings(String warnings[], bool &haveNewData){
       String wcode = keyValue.value().getMember("code");
       new_wcode[cnt] = wcode;     
       cnt++;
-      Serial.println("We have weather warnings.");
-      Serial.println(wcode);
+      // Serial.println("We have weather warnings.");
+      // Serial.println(wcode);
     }
 
     cnt = 0;
@@ -129,7 +129,6 @@ bool get_weather_warnings(String warnings[], bool &haveNewData){
     // see if we have new warnings
     if(haveNewData){
       Serial.println("We have weather warning updates.");
-      
       cnt = 0;
       while(cnt < 4){
         warnings[cnt] = new_wcode[cnt];

@@ -1,5 +1,5 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2020
+// ArduinoJson - https://arduinojson.org
+// Copyright Benoit Blanchon 2014-2021
 // MIT License
 
 #pragma once
@@ -34,10 +34,6 @@ class SizedRamStringAdapter {
 
   size_t size() const {
     return _size;
-  }
-
-  const char* begin() const {
-    return _str;
   }
 
   typedef storage_policies::store_by_copy storage_policy;
