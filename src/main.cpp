@@ -241,7 +241,17 @@ void drawClock(){
     // draw the clock
     RtcDateTime timeNow = Rtc.GetDateTime();
     char timeStringBuff[50]; //50 chars should be enough
-    snprintf(timeStringBuff, sizeof(timeStringBuff), "%02u:%02u", timeNow.Hour(), timeNow.Minute());
+
+    int myHour;
+    if (timeNow.Hour() > 12){
+      myHour = timeNow.Hour() - 12;
+    }
+    else{
+      myHour = timeNow.Hour();
+    }
+
+    // snprintf(timeStringBuff, sizeof(timeStringBuff), "%02u:%02u", timeNow.Hour(), timeNow.Minute());
+    snprintf(timeStringBuff, sizeof(timeStringBuff), "%02u:%02u", myHour, timeNow.Minute());
     String timeNow_str(timeStringBuff);
     display.setFont(&CLOCK_FONT);
     display.setCursor(5,200);
@@ -536,6 +546,8 @@ void runEverySecond(){
     bool haveNewData_warnings = false;
 
     // for every hour fetch local weather, forecast, warning and indoor temperature
+    // FIX THIS!!!!!!!
+    // forecast should only update twice a day, no need to get it everyhour
     if(timeNow.Minute() == 0){
       have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
       have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);

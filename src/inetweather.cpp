@@ -17,6 +17,8 @@ String url_today_weather = url_base + "rhrread&lang=en";
 String url_forecast = url_base + "fnd&lang=en";
 String url_warnings = url_base + "warnsum&lang=en";
 
+// https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=en
+
 
 // caller need to pass the URL and a pre-created DynamicJsonDocument
 int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
