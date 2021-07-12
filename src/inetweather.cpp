@@ -99,7 +99,6 @@ bool get_weather_warnings(String warnings[], bool &haveNewData){
     // }
     // return true;
 
-    // test code here -----------------------------------------
     String new_wcode[4];
 
     // we put all warnings in to the warnings[] although we can only display max 4 warnings

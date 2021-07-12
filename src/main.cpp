@@ -68,10 +68,6 @@ DHT dht(DHTPIN, DHTTYPE);
 
 #define ONBOARD_LED  2
 
-// WIFI SSID and password
-const char* ssid       = "t2000home-2.4G";
-const char* password   = "alicekatrina";
-
 // NTP server and set our GMT+8 timezone
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 28800;
@@ -101,6 +97,10 @@ bool have_local_weather = false;
 bool have_fcast_weather = false;
 bool have_warn_weather = false;
 
+
+// WIFI SSID and password
+const char* ssid       = "t2000home-2.4G";
+const char* password   = "alicekatrina";
 // Connect WIFI
 void connectWifi()
 {
@@ -448,7 +448,6 @@ void drawErrorMsg(){
 
 
 void einkSetup(){
-  Serial.println("elinkSetup ");
   // do not need to rotate the screen
   display.setRotation(0);
   // full window mode is the initial mode, set it anyway
@@ -462,6 +461,7 @@ void einkSetup(){
 
 // --------------------- UI Ends --------------------- //
 
+// special function for I2C device scan only, never use in this program
 void i2cScanner(){
   Serial.println("Scanning I2C Addresses Channel");
   uint8_t cnt=0;
@@ -508,11 +508,9 @@ void redrawEverything(){
     drawDate();
     drawClock();
     drawIndoorTemperature();
-    if(have_ntp){
-      drawForecast();
-      drawWeatherNow();
-      drawWeatherWarnings();
-    }
+    drawForecast();
+    drawWeatherNow();
+    drawWeatherWarnings();
     drawErrorMsg();
   } while (display.nextPage());
 }
@@ -524,6 +522,9 @@ void fetchAndRedrawEverything(){
 }
 
 void runEverySecond(){
+  // TEST FUNCTION
+  // To test the onboard LED only
+  //
   // if( digitalRead(ONBOARD_LED) ){
   //   digitalWrite(ONBOARD_LED, LOW);
   //   Serial.println("LED set to LOW");
@@ -532,6 +533,50 @@ void runEverySecond(){
   //   digitalWrite(ONBOARD_LED, HIGH);
   //   Serial.println("LED set to HIGH");
   // }
+
+  RtcDateTime timeNow = Rtc.GetDateTime();
+
+  bool haveNewData_local = false;
+  bool haveNewData_forecast = false;
+  bool haveNewData_warnings = false;
+
+  // Every 60 minutes
+  // - get weather warnings
+  // - get local weather
+  // - get indoor temperature
+  // - get forecast weather (twice a day only)
+  // - redraw everything
+  // we redrew everything because the eink partial update will do wierd things if we don't have a full redraw for a long time 
+  if(timeNow.Minute() == 0){
+
+    // Every 1700 and ??, we get the forecast (twice a day)
+    if(timeNow.Hour() == 17 || timeNow.Hour() == 10){
+      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
+    }
+
+    have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
+    have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
+    getIndoorTemperature();
+
+    redrawEverything();
+  }
+
+  // Every 5 minutes, we get weather warnings and indoor temperature
+  else if(timeNow.Minute() % 5 == 0){
+    have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
+    getIndoorTemperature();
+  }
+  // Every 1 minute, we redraw the clock.  If no WiFi is connected, we try to reconnect again
+  else if(timeNow.Second() == 0){
+
+  }
+  
+
+  // ---------------------- TEST Code Ends -------------------------- //
+
+
+
+
 
   RtcDateTime timeNow = Rtc.GetDateTime();
   if (timeNow.Second() == 0){
@@ -546,13 +591,17 @@ void runEverySecond(){
     bool haveNewData_warnings = false;
 
     // for every hour fetch local weather, forecast, warning and indoor temperature
-    // FIX THIS!!!!!!!
-    // forecast should only update twice a day, no need to get it everyhour
+    
     if(timeNow.Minute() == 0){
       have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
-      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
       have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
       getIndoorTemperature();
+
+      // FIX THIS!!!!!!!
+      // get forecast twice a day, one update is 16:30, the other is ????
+      if(timeNow.Hour() == 17 || timeNow.Hour() == 10){
+        have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
+      }
     }
     // for every 5 mins, we fetch warning and indoor temperature
     else if(timeNow.Minute() % 5 == 0){
@@ -640,6 +689,26 @@ void runEverySecond(){
   }
 }
 
+// ---------------- TEST CODE HERE ----------------------
+
+void runEveryMinute(){
+
+}
+
+void runEveryHour(){
+
+}
+
+// setup all alarm functions when the clock reach 0 second
+// so that each alarm function will run with the time sync
+void runEverySecondTest(){
+  RtcDateTime timeNow = Rtc.GetDateTime();
+  if (timeNow.Second() == 0){
+    Alarm.timerRepeat(60, runEveryMinute);
+    Alarm.timerRepeat(3600, runEveryHour);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   // // this eink display init has to run in the very beginning
@@ -658,12 +727,9 @@ void setup() {
 
   // run the function every second.  I wanna use this lib instead of playing with hardware clock in esp32
   Alarm.timerRepeat(1, runEverySecond);
-  // change date every 00:00
-  // Alarm.alarmRepeat(0,0,0,fetchAndRedrawEverything);
 
-  /**************** Test alarm */
-  // Alarm.timerRepeat(30, fetchAndDrawEverything);
-
+  // Alarm.timerRepeat(60, runEveryMinute);
+  // Alarm.timerRepeat(3600, runEveryHour);
 
   // do all internet tasks if we have wifi.
   if (have_wifi) {
@@ -714,53 +780,9 @@ void setup() {
   // *** end of special handling for Waveshare ESP32 Driver board *** //
   // **************************************************************** //
 
-  // display.firstPage();
-  // do
-  // {
-  //   drawStaticUI();
-  //   drawDate();
-  //   drawClock();
-  //   drawIndoorTemperature();
-  //   if(have_ntp){
-  //     drawForecast();
-  //     drawWeatherNow();
-  //     drawWeatherWarnings();
-  //   }
-  //   drawErrorMsg();
-  // } while (display.nextPage());
-
   redrawEverything();
-
-  // delay(10000);
-  // display.println("Clear screen");
-  // display.clearScreen();
-  // delay(5000);
-  // display.powerOff();
 }
 
 void loop() {
-  // Wait a few seconds between measurements.
-
-  // getIndoorTemperature();
-
-  // RtcDateTime currTime = Rtc.GetDateTime();
-  // Serial.println("RTC time---");
-  // printDateTime(currTime);
-  // Serial.println("NTP time---");
-  // Serial.println(timeClient.getFormattedTime());
-
-  // if (!RTC_check()){
-  //   Serial.println("RTC not running!!");
-  // }
-  // delay(10000);
-  // display.firstPage();
-  // do
-  // {
-  //   drawClock();
-  // } while (display.nextPage());
-  // for (int i=0; i< 29; i++){
-  //       Serial.println("image bitmap is");
-  //       Serial.println((long int)imagePoolSmall[i].bitmap);
-  //   }
   Alarm.delay(500);
 }
