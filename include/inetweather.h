@@ -18,5 +18,6 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc);
 bool get_local_weather(Weather *weather, bool &haveNewData);
 bool get_forecast_weather(Weather *today, Weather forcastDay[], bool &haveNewData);
 bool get_weather_warnings(String warnings[], bool &haveNewData);
+bool fetch_openweathermap(Weather *today);
 
 #endif

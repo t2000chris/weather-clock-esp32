@@ -1,0 +1,20 @@
+{
+  "name": "SimpleWeather",
+  "keywords": "Weather, openweathermap, darksky, forecast.io",
+  "description": "Library to get current weather and forecast from openweather or darksky",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/dushyantahuja/SimpleWeather.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Dushyant Ahuja",
+      "maintainer": true
+    }
+  ],
+  "version": "1.0.1",
+  "frameworks": "arduino",
+  "platforms": "espressif8266"
+}

@@ -12,13 +12,14 @@ String local_name = "Tuen Mun";
 int today_max_temp = 0;
 int today_min_temp = 0;
 
+
+
 String url_base = String("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=");
 String url_today_weather = url_base + "rhrread&lang=en";
 String url_forecast = url_base + "fnd&lang=en";
 String url_warnings = url_base + "warnsum&lang=en";
 
 // https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=en
-
 
 // caller need to pass the URL and a pre-created DynamicJsonDocument
 int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
@@ -61,6 +62,27 @@ int fetch_weather(String url, DynamicJsonDocument* jsonDoc)
   }
   http.end();
   return 1;
+}
+
+// only use this function to get today's min and max temperature, since it's hard to get this value from HK observatory 
+bool fetch_openweathermap(Weather *today){
+  String openweathermap_key = "76178b03c17f2561c36aee412763c8bd";
+  String openweathermap_url_base = "https://api.openweathermap.org/data/2.5/weather?q=hongkong&units=metric&appid=";
+  String openweathermap_url = openweathermap_url_base + openweathermap_key;
+
+  DynamicJsonDocument doc(7000);
+  int fetchWeatherOK = 0;
+
+  fetchWeatherOK = fetch_weather(openweathermap_url, &doc);
+
+  if (fetchWeatherOK){
+    JsonObject docRoot = doc.as<JsonObject>();
+
+    today->min_temp = doc["main"]["temp_min"];
+    today->max_temp = doc["main"]["temp_max"];
+    // Serial.printf("Min temp: %d\n", min_temp);
+    // Serial.printf("Max temp: %d\n", max_temp);
+  }
 }
 
 bool get_weather_warnings(String warnings[], bool &haveNewData){
@@ -223,18 +245,18 @@ bool get_forecast_weather(Weather *today, Weather forecastDay[], bool &haveNewDa
 
       String firstDayStr = doc["weatherForecast"][0]["forecastDate"];
 
-      // if the forecast for the first day is today, then we know the min max temperature
-      if (firstDayStr == today->date){
-        today->min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
-        today->max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
+      // // if the forecast for the first day is today, then we know the min max temperature
+      // if (firstDayStr == today->date){
+      //   today->min_temp = doc["weatherForecast"][0]["forecastMintemp"]["value"];
+      //   today->max_temp = doc["weatherForecast"][0]["forecastMaxtemp"]["value"];
 
-        // Serial.printf("Today max temperature : %d\nToday min temperature : %d\n", today.max_temp, today.min_temp );
-        // start from the 2nd object
-        dateCntOffset = 1;
-      }
-      else {
-        Serial.println("Can't find today's forecast from the web.");
-      }
+      //   // Serial.printf("Today max temperature : %d\nToday min temperature : %d\n", today.max_temp, today.min_temp );
+      //   // start from the 2nd object
+      //   dateCntOffset = 1;
+      // }
+      // else {
+      //   Serial.println("Can't find today's forecast from the web.");
+      // }
 
       // we only do 6 day forecast
       for(int x=0; x<6; x++){
