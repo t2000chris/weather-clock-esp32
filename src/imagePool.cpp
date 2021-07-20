@@ -7,8 +7,10 @@ extern const int weatherIconList[] = {50,51,52,53,54,
                                  80,81,82,83,84,85,
                                  90,91,92,93};
 
+// the change the WMSGNLTC1 to TC1, TC3 and so on
 extern const String warningIconList[] = {
-            "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNL", "WMSGNLTC1", "WMSGNLTC3",
+            // "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNL", "WMSGNLTC1", "WMSGNLTC3",
+            "WCOLD", "WFIRER", "WFIREY", "WFNTSA", "WFROST", "WHOT", "WL", "WMSGNL", "TC1", "TC3",
             "WMSGNLTC8NE", "WMSGNLTC8NW", "WMSGNLTC8SE", "WMSGNLTC8SW", "WMSGNLTC9", "WMSGNLTC10", 
             "WRAINA", "WRAINB", "WRAINR", "WTCSGNL", "WTMW", "WTS"
 };
@@ -83,6 +85,6 @@ int findImageIndex(String warningCode){
         return imgIndex;
       }
     }
-    return imgIndex;
+  return imgIndex;
 }
  

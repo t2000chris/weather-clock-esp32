@@ -295,6 +295,11 @@ void drawIndoorTemperature(){
   // u8g2Fonts.drawGlyph(24, 10, 0x0e10a);  // Right Arrow
 
 void drawWeatherNow(){
+  // don't draw anything if we don't have any data
+  if(have_local_weather == false){
+    return;
+  }
+
   // draw the weather image
   int imgIndex;
   imgIndex = findImageIndex(local_weather_today.weather_icon);
@@ -331,6 +336,11 @@ void drawWeatherNow(){
 }
 
 void drawForecast(){
+  // do nothing if we don't have any data
+  if(have_fcast_weather == false){
+    return;
+  } 
+
   int xoffset_name = 134;
   int xoffset_temp = 134;
   int i;
@@ -369,13 +379,17 @@ void drawForecast(){
     char tempStringBuff[50];
     snprintf(tempStringBuff, sizeof(tempStringBuff), "%d-%d", forecast[i].min_temp, forecast[i].max_temp);
     String temp_str(tempStringBuff);
-    // forecast[x].weather_icon;
     display.print(temp_str);
   }
 }
 
 // we can draw max of 5 warnings
 void drawWeatherWarnings(){
+  // do nothing if we don't have any data
+  if(have_warn_weather == false){
+    return;
+  }
+
   int cnt = 0;
   int imgIndex;
   int xoffset = 93;
@@ -383,8 +397,8 @@ void drawWeatherWarnings(){
 
   // in the current UI design, can only display 4 warings max
   while(weather_warnings[cnt] != NULL && cnt < 4){
-    // Serial.println("got warnings");
-    // Serial.println(weather_wanings[cnt]);
+    Serial.println("Warning codes are:");
+    Serial.println(weather_warnings[cnt]);
 
     x = 260 + (xoffset*cnt);
     imgIndex = findImageIndex(weather_warnings[cnt]);
@@ -504,6 +518,7 @@ void fetchEverything(){
   have_local_weather = get_local_weather(&local_weather_today, dummy);
   have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
   have_warn_weather = get_weather_warnings(weather_warnings, dummy);
+  fetch_openweathermap(&local_weather_today);
   getIndoorTemperature();
 }
 
@@ -532,7 +547,6 @@ void fetchAndRedrawEverything(){
   redrawEverything();
 }
 
-void runEverySecond(){
   // TEST FUNCTION
   // To test the onboard LED only
   //
@@ -545,165 +559,6 @@ void runEverySecond(){
   //   Serial.println("LED set to HIGH");
   // }
 
-  RtcDateTime timeNow = Rtc.GetDateTime();
-
-  bool haveNewData_local = false;
-  bool haveNewData_forecast = false;
-  bool haveNewData_warnings = false;
-
-  // Every 60 minutes
-  // - get weather warnings
-  // - get local weather
-  // - get indoor temperature
-  // - get forecast weather (twice a day only)
-  // - redraw everything
-  // we redrew everything because the eink partial update will do wierd things if we don't have a full redraw for a long time 
-  if(timeNow.Minute() == 0){
-
-    // Every 1700 and ??, we get the forecast (twice a day)
-    if(timeNow.Hour() == 17 || timeNow.Hour() == 10){
-      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
-    }
-
-    have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
-    have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
-    getIndoorTemperature();
-
-    redrawEverything();
-  }
-
-  // Every 5 minutes, we get weather warnings and indoor temperature
-  else if(timeNow.Minute() % 5 == 0){
-    have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
-    getIndoorTemperature();
-  }
-  // Every 1 minute, we redraw the clock.  If no WiFi is connected, we try to reconnect again
-  else if(timeNow.Second() == 0){
-
-  }
-  
-
-  // ---------------------- TEST Code Ends -------------------------- //
-
-
-
-
-
-  // RtcDateTime timeNow = Rtc.GetDateTime();
-  // if (timeNow.Second() == 0){
-  //   // In midnight, we fetch all data and redraw everything
-  //   if(timeNow.Hour() == 0 && timeNow.Minute() == 0){
-  //     fetchAndRedrawEverything();
-  //     return;
-  //   }
-
-  //   bool haveNewData_local = false;
-  //   bool haveNewData_forecast = false;
-  //   bool haveNewData_warnings = false;
-
-  //   // for every hour fetch local weather, forecast, warning and indoor temperature
-    
-  //   if(timeNow.Minute() == 0){
-  //     have_local_weather = get_local_weather(&local_weather_today, haveNewData_local);
-  //     have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
-  //     getIndoorTemperature();
-
-  //     // FIX THIS!!!!!!!
-  //     // get forecast twice a day, one update is 16:30, the other is ????
-  //     if(timeNow.Hour() == 17 || timeNow.Hour() == 10){
-  //       have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, haveNewData_forecast);
-  //     }
-  //   }
-  //   // for every 5 mins, we fetch warning and indoor temperature
-  //   else if(timeNow.Minute() % 5 == 0){
-  //     have_warn_weather = get_weather_warnings(weather_warnings, haveNewData_warnings);
-  //     getIndoorTemperature();
-  //   }
-
-
-  //   // redraw everything if we have new weather data
-  //   if(haveNewData_local || haveNewData_forecast || haveNewData_warnings){
-  //       Serial.println("We have weather updates");
-  //       redrawEverything();
-  //   }
-  //   // otherwise just update the time and indoor temperature
-  //   else{
-
-  //     // For every 60 mins -------------
-  //     // Since this eink doesn't support partial update, it'll start acting wierd if we keep doing partial update
-  //     // so we just redraw the whole screen every 60 mins
-  //     if(timeNow.Minute() == 0){
-  //       fetchAndRedrawEverything();
-  //     }
-
-  //     // For every 5 mins -------------
-  //     // update indoor temperature
-  //     else if(timeNow.Minute() % 5 == 0){
-  //       display.setPartialWindow(173, 235, 42, 90);
-  //       do
-  //       {
-  //         display.fillScreen(GxEPD_WHITE);
-  //         drawIndoorTemperature();
-  //       } while (display.nextPage());
-      
-
-  //       // update weather warnings
-  //       display.setPartialWindow(260, 238, 370, 90);
-  //       do
-  //       {
-  //         display.fillScreen(GxEPD_WHITE);
-  //         drawWeatherWarnings();
-  //       } while (display.nextPage());
-
-  //       // update clock 
-  //       display.setPartialWindow(5, 80, 390, 130);
-  //       display.firstPage();
-  //       do
-  //       {
-  //         display.fillScreen(GxEPD_WHITE);
-  //         drawClock();
-  //       } while (display.nextPage());
-  //     }
-
-  //     else {
-  //       // For every 1 min ------------
-  //       // if initially we don't have wifi, we'll connect every min
-  //       if(have_wifi == false){
-  //           connectWifi();
-
-  //           // get all internet data if we have wifi
-  //           if(have_wifi == true){
-  //             // and do a full screen update
-  //             // no need to redraw the clock, just return here
-  //             fetchAndRedrawEverything();
-  //             return;
-  //           }
-  //       }
-
-  //       // update clock 
-  //       display.setPartialWindow(5, 80, 390, 130);
-  //       display.firstPage();
-  //       do
-  //       {
-  //         display.fillScreen(GxEPD_WHITE);
-  //         drawClock();
-  //       } while (display.nextPage());
-
-
-        //////////////// Test ////////////////////////////
-        // bool got_new_warnings; 
-        // have_warn_weather = get_weather_warnings(weather_warnings, got_new_warnings);
-        // if(got_new_warnings){
-        //   redrawEverything();
-        // }
-
-
-  //     }
-  //   }
-  // }
-}
-
-// ---------------- TEST CODE HERE ----------------------
 
 // we need this to avoid all alarm function redraw everything together
 // we only check if we need to redraw every minute
@@ -711,13 +566,30 @@ bool need_refresh_screen = false;
 
 // Every 1 minute, we redraw the clock.  If no WiFi is connected, we try to reconnect again
 void runEveryMinute(){
+  bool just_do_fetch = false;
+
+  // if(timeStatus() == timeSet){
+  //   Serial.println("Time set and sync");
+  //   Serial.printf("%d : %d\n", hour(), minute());
+  // }
+  
   if(have_wifi == false){
-    Serial.println("Reconnect wifi every minute");
+    Serial.println("No WiFi, reconnecting every minute");
     connectWifi();
+    if(have_wifi){
+      fetchEverything();
+      just_do_fetch = true;
+    }
+  }
+
+  // don't fetch everything again if we just did it
+  if(have_ntp == false && just_do_fetch == false){
+    fetchEverything();
   }
 
   // check if we need to redraw the whole screen
   if (need_refresh_screen){
+    Serial.println("Run every minute. Redrawing the whole screen");
     redrawEverything();
     need_refresh_screen = false;
   }
@@ -743,8 +615,15 @@ void runEveryFiveMinutes(){
 
 // Every 1 hour, we redrew everything because the eink partial update will do wierd things if we don't have a full redraw for a long time 
 void runEveryHour(){
+  RtcDateTime timeNow = Rtc.GetDateTime();
+
   Serial.println("Run every hour");
   need_refresh_screen = true;
+
+  // get everything in midnight
+  if(timeNow.Hour() == 0){
+    fetchEverything();
+  }
 }
 
 // get the forecast twice a day
@@ -761,11 +640,11 @@ void runTwiceAday(){
 }
 
 
-AlarmId id_runEverySecondTest;
+AlarmId id_runEverySecond;
 
 // setup all alarm functions when the clock reach 0 second
 // so that each alarm function will run with the time sync
-void runEverySecondTest(){
+void runEverySecond(){
   RtcDateTime timeNow = Rtc.GetDateTime();
   if (timeNow.Second() == 0){
     Alarm.timerRepeat(60, runEveryMinute);
@@ -774,20 +653,18 @@ void runEverySecondTest(){
     // Alarm.timerRepeat(3600, runEveryHour);
     // set the function run every hour
     for(int n = 0; n < 24; n++){
-      Alarm.alarmRepeat(n,0,0,runTwiceAday); 
+      Alarm.alarmRepeat(n,0,0,runEveryHour); 
     }
 
     // set alarm function the get forecast twice a day
     Alarm.alarmRepeat(7,1,0,runTwiceAday); 
     Alarm.alarmRepeat(17,1,0,runTwiceAday); 
     // remove itself from alarm, so it won't run every second
-    Alarm.free(id_runEverySecondTest);
+    Alarm.free(id_runEverySecond);
     redrawClock();
   }
 
   // Serial.println("Run every second");
-  // Serial.printf("Second is %d \n", timeNow.Second());
-  
 }
 
 void setup() {
@@ -808,45 +685,49 @@ void setup() {
 
   // run the function every second.  I wanna use this lib instead of playing with hardware clock in esp32
   // Alarm.timerRepeat(1, runEverySecond);
-  id_runEverySecondTest = Alarm.timerRepeat(1, runEverySecondTest);
+  id_runEverySecond = Alarm.timerRepeat(1, runEverySecond);
 
   // Alarm.timerRepeat(60, runEveryMinute);
   // Alarm.timerRepeat(3600, runEveryHour);
 
-  // do all internet tasks if we have wifi.
-  if (have_wifi) {
-    // check if we got RTC, if so we do the NTP time sync
-    if(Rtc.GetIsRunning()){
-      have_rtc = true;
-      setTimeWithNTP();
-    }
-    else{
-      Serial.println("RTC module is not running or not found!!");
-    }
+  // check if we got RTC, if so we do the NTP time sync
+  if(Rtc.GetIsRunning()){
+    have_rtc = true;
+    setTimeWithNTP();
 
-    // if NTP time is ok, that means we have internet (since we don't do any ping test)
-    if (have_ntp){
-      local_weather_today.date = getTodayDateString();
+    // set the system time here, otherwise the Alarm won't work
+    RtcDateTime timeNow = Rtc.GetDateTime();
+    setTime(timeNow.Hour(), timeNow.Minute(), timeNow.Second(), timeNow.Day(), timeNow.Month(), timeNow.Year());
+  }
+  else{
+    Serial.println("RTC module is not running or not found!!");
+  }
 
-      // get local and all forcast weather info
-      // dummy bool
-      bool dummy = false;
-      have_local_weather = get_local_weather(&local_weather_today, dummy);
-      have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
-      have_warn_weather = get_weather_warnings(weather_warnings, dummy);
 
-      fetch_openweathermap(&local_weather_today);
+  // get all weather info if we have wifi and ntp. 
+  // if NTP time is ok, that means we have internet (since we don't do any ping test)
+  if (have_wifi && have_ntp) {
+    local_weather_today.date = getTodayDateString();
 
-      // Serial.println("------ Weather today ------");
-      //   Serial.printf("Date : %s\nTemp : %d\nHumidity : %d\nIcon Num : %d\n\n",
-      //               local_weather_today.date, local_weather_today.temperature, local_weather_today.humidity, local_weather_today.weather_icon);
+    // get local and all forcast weather info
+    // dummy bool
+    bool dummy = false;
+    have_local_weather = get_local_weather(&local_weather_today, dummy);
+    have_fcast_weather = get_forecast_weather(&local_weather_today, forecast, dummy);
+    have_warn_weather = get_weather_warnings(weather_warnings, dummy);
 
-      // Serial.println("------ Weather forecast ------");
-      // for(int x=0; x<6; x++){
-      //   Serial.printf("Date : %s\nMin Temp : %d\nMax Temp : %d\nIcon Num : %d\n\n",
-      //               forecast[x].date, forecast[x].min_temp, forecast[x].max_temp, forecast[x].weather_icon);
-      // }
-    }
+    // this function only to get today's min max temperature
+    fetch_openweathermap(&local_weather_today);
+
+    // Serial.println("------ Weather today ------");
+    //   Serial.printf("Date : %s\nTemp : %d\nHumidity : %d\nIcon Num : %d\n\n",
+    //               local_weather_today.date, local_weather_today.temperature, local_weather_today.humidity, local_weather_today.weather_icon);
+
+    // Serial.println("------ Weather forecast ------");
+    // for(int x=0; x<6; x++){
+    //   Serial.printf("Date : %s\nMin Temp : %d\nMax Temp : %d\nIcon Num : %d\n\n",
+    //               forecast[x].date, forecast[x].min_temp, forecast[x].max_temp, forecast[x].weather_icon);
+    // }
   }
 
 
