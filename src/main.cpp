@@ -2,12 +2,8 @@
 // enable or disable GxEPD2_GFX base class
 #define ENABLE_GxEPD2_GFX 0
 
-#include "images/system.h"
-#include "imagePool.h"
-
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiMulti.h>
 #include <HTTPClient.h>
 #include <DHT.h>
 #include <ArduinoJson.h>
@@ -19,7 +15,9 @@
 
 WiFiUDP ntpUDP;
 
+#include <WiFiMulti.h>
 WiFiMulti wifiMulti;
+
 
 // for RTC 
 #include <Wire.h> 
@@ -34,6 +32,11 @@ RtcDS3231<TwoWire> Rtc(Wire);
 #include "fonts/monofonto70pt7b.h"
 #include "fonts/monofonto80pt7b.h"
 
+#include "SPIFFS.h"
+#include "inetweather.h"
+#include "images/system.h"
+#include "imagePool.h"
+
 #define CLOCK_FONT monofonto80pt7b
 #define WEATHER_FONT monofonto70pt7b
 #define DATE_FONT monofonto26pt7b
@@ -41,7 +44,18 @@ RtcDS3231<TwoWire> Rtc(Wire);
 #define DATE_FONT_S monofonto18pt7b
 #define ERROR_FONT monofonto10pt7b
 
-#include "inetweather.h"
+
+
+//////////// Auto Connect Test ///////////////
+// #include <WebServer.h>
+// #include <AutoConnect.h>
+// WebServer Server;
+// AutoConnect Portal(Server);
+
+// Build size before using AutoConnect and SPIFFS storage
+// RAM:   [===       ]  27.3% (used 89568 bytes from 327680 bytes)
+// Flash: [==========]  96.7% (used 1267900 bytes from 1310720 bytes)
+
 
 // define the pins for the e-ink display
 // This is for nodemcu-32s pinout
@@ -99,13 +113,13 @@ bool have_warn_weather = false;
 
 
 // WIFI SSID and password
-const char* ssid       = "t2000home-2.4G";
-const char* password   = "alicekatrina";
+const char* myssid       = "t2000home-2.4G";
+const char* mypassword   = "alicekatrina";
 // Connect WIFI
 void connectWifi()
 {
-  Serial.printf("Connecting to %s ", ssid);
-  wifiMulti.addAP(ssid, password);
+  Serial.printf("Connecting to %s ", myssid);
+  wifiMulti.addAP(myssid, mypassword);
   if (wifiMulti.run() != WL_CONNECTED) {
       Serial.println("WiFi not connected");
       have_wifi = false;
@@ -247,6 +261,9 @@ void drawClock(){
     if (timeNow.Hour() > 12){
       myHour = timeNow.Hour() - 12;
     }
+    else if(timeNow.Hour() == 0){
+      myHour = 12;
+    }
     else{
       myHour = timeNow.Hour();
     }
@@ -258,7 +275,7 @@ void drawClock(){
     display.setCursor(5,200);
     display.print(timeNow_str);
     
-    Serial.printf("Time update: %s\n", timeNow_str);
+    Serial.printf("Time update: %s\n", timeNow_str.c_str());
   }
 }
 
@@ -271,6 +288,7 @@ void redrawClock(){
     display.fillScreen(GxEPD_WHITE);
     drawClock();
   } while (display.nextPage());
+  display.refresh(true);
 }
   
 void drawIndoorTemperature(){
@@ -304,14 +322,17 @@ void drawWeatherNow(){
   int imgIndex;
   imgIndex = findImageIndex(local_weather_today.weather_icon);
   display.drawBitmap(410, 10, bigWeatherImages[imgIndex], 216, 216, GxEPD_BLACK);
+
+  // Test code -------------
+  // drawBitmapFromSpiffs("81.bmp", 410, 10, false);
+
   // draw temperature now
   display.setFont(&WEATHER_FONT);
   display.setCursor(630,155);
   display.print(String(local_weather_today.temperature));
 
-  // draw today's highest and lowest temperature
-  // after 12noon, we won't be able to get today's hightest and lowest temp
-  // if so then we just print out "no info"
+  // we won't be able to get today's hightest and lowest temp
+  // if so then we just print out "N/A"
   if (local_weather_today.min_temp != 0){
     // we have the temperature info, just print that out
     display.setFont(&TEMPERATURE_FONT); 
@@ -321,7 +342,7 @@ void drawWeatherNow(){
     display.print(String(local_weather_today.min_temp));
   }
   else{
-    // otherwise we just print out "no info"
+    // otherwise we just print out "N/A"
     display.setFont(&ERROR_FONT);
     display.setCursor(710,218);
     display.print("N/A");
@@ -487,27 +508,27 @@ void einkSetup(){
 // --------------------- UI Ends --------------------- //
 
 // special function for I2C device scan only, never use in this program
-void i2cScanner(){
-  Serial.println("Scanning I2C Addresses Channel");
-  uint8_t cnt=0;
-  for(uint8_t i=0;i<128;i++){
-    Wire.beginTransmission(i);
-    uint8_t ec=Wire.endTransmission(true);
-    if(ec==0){
-      if(i<16)Serial.print('0');
-      Serial.print(i,HEX);
-      cnt++;
-    }
-    else Serial.print("..");
-    Serial.print(' ');
-    if ((i&0x0f)==0x0f)Serial.println();
-    }
-  Serial.print("Scan Completed, ");
-  Serial.print(cnt);
-  Serial.println(" I2C Devices found.");
-  Serial.println("---------------------------------------");
+// void i2cScanner(){
+//   Serial.println("Scanning I2C Addresses Channel");
+//   uint8_t cnt=0;
+//   for(uint8_t i=0;i<128;i++){
+//     Wire.beginTransmission(i);
+//     uint8_t ec=Wire.endTransmission(true);
+//     if(ec==0){
+//       if(i<16)Serial.print('0');
+//       Serial.print(i,HEX);
+//       cnt++;
+//     }
+//     else Serial.print("..");
+//     Serial.print(' ');
+//     if ((i&0x0f)==0x0f)Serial.println();
+//     }
+//   Serial.print("Scan Completed, ");
+//   Serial.print(cnt);
+//   Serial.println(" I2C Devices found.");
+//   Serial.println("---------------------------------------");
 
-}
+// }
 
 void fetchEverything(){
   setTimeWithNTP();
@@ -566,24 +587,29 @@ bool need_refresh_screen = false;
 
 // Every 1 minute, we redraw the clock.  If no WiFi is connected, we try to reconnect again
 void runEveryMinute(){
-  bool just_do_fetch = false;
+  bool need_fetch_everything = false;
 
   // if(timeStatus() == timeSet){
   //   Serial.println("Time set and sync");
   //   Serial.printf("%d : %d\n", hour(), minute());
   // }
   
+  // check if we have wifi in every minute
   if(have_wifi == false){
     Serial.println("No WiFi, reconnecting every minute");
     connectWifi();
     if(have_wifi){
-      fetchEverything();
-      just_do_fetch = true;
+      need_fetch_everything = true;
     }
   }
 
-  // don't fetch everything again if we just did it
-  if(have_ntp == false && just_do_fetch == false){
+  // check if we have internet connection
+  if(have_ntp == false){
+    need_fetch_everything = true;
+  }
+
+  // we do get everything here
+  if(need_fetch_everything == true){
     fetchEverything();
   }
 
@@ -667,6 +693,14 @@ void runEverySecond(){
   // Serial.println("Run every second");
 }
 
+// void rootPage(){
+//   char content[] = "Hello, world";
+//   Server.send(200, "text/plain", content);
+// }
+
+// AutoConnect portal;
+// AutoConnectConfig config;
+
 void setup() {
   Serial.begin(115200);
   // // this eink display init has to run in the very beginning
@@ -680,15 +714,16 @@ void setup() {
   dht.begin();
   Rtc.Begin();
 
+  // try mounting SPIFFS
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+  }
+
   // connect wifi first
   connectWifi();
 
   // run the function every second.  I wanna use this lib instead of playing with hardware clock in esp32
-  // Alarm.timerRepeat(1, runEverySecond);
   id_runEverySecond = Alarm.timerRepeat(1, runEverySecond);
-
-  // Alarm.timerRepeat(60, runEveryMinute);
-  // Alarm.timerRepeat(3600, runEveryHour);
 
   // check if we got RTC, if so we do the NTP time sync
   if(Rtc.GetIsRunning()){
@@ -746,8 +781,27 @@ void setup() {
   // **************************************************************** //
 
   redrawEverything();
+
+  // if(!SPIFFS.begin(true)){
+  //   Serial.println("An Error has occurred while mounting SPIFFS");
+  //   return;
+  // }
+
+  // File file = SPIFFS.open("/mytext.txt");
+  // if(!file){
+  //   Serial.println("Failed to open file for reading");
+  //   return;
+  // }
+  
+  // Serial.println("File Content:");
+  // while(file.available()){
+  //   Serial.write(file.read());
+  // }
+  // file.close();
+
 }
 
 void loop() {
+  // Portal.handleClient();
   Alarm.delay(500);
 }

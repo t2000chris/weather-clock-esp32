@@ -76,13 +76,13 @@ bool fetch_openweathermap(Weather *today){
   fetchWeatherOK = fetch_weather(openweathermap_url, &doc);
 
   if (fetchWeatherOK){
-    JsonObject docRoot = doc.as<JsonObject>();
-
     today->min_temp = doc["main"]["temp_min"];
     today->max_temp = doc["main"]["temp_max"];
     // Serial.printf("Min temp: %d\n", min_temp);
     // Serial.printf("Max temp: %d\n", max_temp);
+    return true;
   }
+  return false;
 }
 
 bool get_weather_warnings(String warnings[], bool &haveNewData){
@@ -168,6 +168,7 @@ bool get_weather_warnings(String warnings[], bool &haveNewData){
     Serial.println("Error fetching weather warnings!!!");
     return false;
   }
+  return false;
 }
 
 // return true if get weather ok
