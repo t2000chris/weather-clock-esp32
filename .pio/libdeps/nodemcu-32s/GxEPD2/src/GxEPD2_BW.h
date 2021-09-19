@@ -31,6 +31,7 @@
 #endif
 
 #include "GxEPD2_EPD.h"
+#include "epd/GxEPD2_102.h"
 #include "epd/GxEPD2_154.h"
 #include "epd/GxEPD2_154_D67.h"
 #include "epd/GxEPD2_154_T8.h"
@@ -39,6 +40,7 @@
 #include "epd/GxEPD2_213.h"
 #include "epd/GxEPD2_213_B72.h"
 #include "epd/GxEPD2_213_B73.h"
+#include "epd/GxEPD2_213_B74.h"
 #include "epd/GxEPD2_213_flex.h"
 #include "epd/GxEPD2_213_M21.h"
 #include "epd/GxEPD2_213_T5D.h"
@@ -49,6 +51,7 @@
 #include "epd/GxEPD2_290_T5D.h"
 #include "epd/GxEPD2_290_M06.h"
 #include "epd/GxEPD2_290_T94.h"
+#include "epd/GxEPD2_290_T94_V2.h"
 #include "epd/GxEPD2_270.h"
 #include "epd/GxEPD2_371.h"
 #include "epd/GxEPD2_420.h"
@@ -61,6 +64,7 @@
 #include "epd/GxEPD2_1248.h"
 #include "it8951/GxEPD2_it60.h"
 #include "it8951/GxEPD2_it60_1448x1072.h"
+#include "it8951/GxEPD2_it78_1872x1404.h"
 
 template<typename GxEPD2_Type, const uint16_t page_height>
 class GxEPD2_BW : public GxEPD2_GFX_BASE_CLASS

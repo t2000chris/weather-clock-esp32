@@ -44,8 +44,6 @@ RtcDS3231<TwoWire> Rtc(Wire);
 #define DATE_FONT_S monofonto18pt7b
 #define ERROR_FONT monofonto10pt7b
 
-
-
 //////////// Auto Connect Test ///////////////
 // #include <WebServer.h>
 // #include <AutoConnect.h>
@@ -74,13 +72,14 @@ GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ 1
 **/
 
 // Digital pin connected to the DHT sensor
-// #define DHTPIN 14
-#define DHTPIN 32
+// #define DHTPIN 32  // <-- normal
+#define DHTPIN 16  // <-- for my broken board
 #define DHTTYPE DHT22
 // Initialize DHT sensor.
 DHT dht(DHTPIN, DHTTYPE);
 
 #define ONBOARD_LED  2
+#define BTNPIN 25
 
 // NTP server and set our GMT+8 timezone
 const char* ntpServer = "pool.ntp.org";
@@ -614,15 +613,17 @@ void runEveryMinute(){
   }
 
   // check if we need to redraw the whole screen
-  if (need_refresh_screen){
-    Serial.println("Run every minute. Redrawing the whole screen");
-    redrawEverything();
-    need_refresh_screen = false;
-  }
+  // if (need_refresh_screen){
+  //   Serial.println("Run every minute. Redrawing the whole screen");
+  //   redrawEverything();
+  //   need_refresh_screen = false;
+  // }
   // otherwise we just update the clock
-  else{
-    redrawClock();  
-  }
+  // else{
+  //   redrawClock();  
+  // }
+
+  redrawEverything();
 }
 
 // Every 5 minutes, we get weather warnings and indoor temperature
@@ -633,18 +634,26 @@ void runEveryFiveMinutes(){
   getIndoorTemperature();
 
   // redraw everything if we have new weather data
-  if(haveNewData_warnings){
-      Serial.println("We have weather updates");
-      need_refresh_screen = true;
-  }
+  // if(haveNewData_warnings){
+  //     Serial.println("We have weather updates");
+  //     need_refresh_screen = true;
+  // }
 }
+
+// Need to redraw the whole screen every 10 minutes
+// it's because the current e-ink model donesn't support partial update
+// if we keep doing partial update, the screen will have a very unclear image
+// therefore we need to refresh the whole screen every 10 minutes
+// void runEvery10Minutes(){
+//   need_refresh_screen = true;
+// }
 
 // Every 1 hour, we redrew everything because the eink partial update will do wierd things if we don't have a full redraw for a long time 
 void runEveryHour(){
   RtcDateTime timeNow = Rtc.GetDateTime();
 
   Serial.println("Run every hour");
-  need_refresh_screen = true;
+  // need_refresh_screen = true;
 
   // get everything in midnight
   if(timeNow.Hour() == 0){
@@ -674,7 +683,8 @@ void runEverySecond(){
   RtcDateTime timeNow = Rtc.GetDateTime();
   if (timeNow.Second() == 0){
     Alarm.timerRepeat(60, runEveryMinute);
-    Alarm. timerRepeat(300, runEveryFiveMinutes);
+    Alarm.timerRepeat(300, runEveryFiveMinutes);
+    // Alarm.timerRepeat(600, runEvery10Minutes);
 
     // Alarm.timerRepeat(3600, runEveryHour);
     // set the function run every hour
@@ -693,13 +703,8 @@ void runEverySecond(){
   // Serial.println("Run every second");
 }
 
-// void rootPage(){
-//   char content[] = "Hello, world";
-//   Server.send(200, "text/plain", content);
-// }
 
-// AutoConnect portal;
-// AutoConnectConfig config;
+
 
 void setup() {
   Serial.begin(115200);
@@ -710,6 +715,9 @@ void setup() {
 
   // setup onboard LED
   pinMode(ONBOARD_LED, OUTPUT);
+
+  // setup button
+  pinMode(BTNPIN, INPUT);
 
   dht.begin();
   Rtc.Begin();
@@ -781,27 +789,17 @@ void setup() {
   // **************************************************************** //
 
   redrawEverything();
-
-  // if(!SPIFFS.begin(true)){
-  //   Serial.println("An Error has occurred while mounting SPIFFS");
-  //   return;
-  // }
-
-  // File file = SPIFFS.open("/mytext.txt");
-  // if(!file){
-  //   Serial.println("Failed to open file for reading");
-  //   return;
-  // }
-  
-  // Serial.println("File Content:");
-  // while(file.available()){
-  //   Serial.write(file.read());
-  // }
-  // file.close();
-
 }
+
+int Btn_state = 0;
 
 void loop() {
   // Portal.handleClient();
   Alarm.delay(500);
+
+  Btn_state = digitalRead(BTNPIN);
+  if ( Btn_state == HIGH){
+    Serial.println("Button Pressed! Restarting.....");
+    ESP.restart();
+  }
 }

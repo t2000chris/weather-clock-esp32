@@ -98,6 +98,7 @@
                 "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/RTClib_ID83",
                 "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/SimpleWeather/src",
                 "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/SoftwareWire_ID832",
+                "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/TimeAlarms",
                 "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                 "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/AzureIoT/src",
@@ -215,6 +216,7 @@
                     "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/RTClib_ID83",
                     "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/SimpleWeather/src",
                     "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/SoftwareWire_ID832",
+                    "c:/Users/t2000/Documents/PlatformIO/Projects/Weather Clock/.pio/libdeps/nodemcu-32s/TimeAlarms",
                     "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                     "C:/Users/t2000/.platformio/packages/framework-arduinoespressif32/libraries/AzureIoT/src",
@@ -241,7 +243,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50101",
+                "PLATFORMIO=50200",
                 "ARDUINO_NodeMCU_32S",
                 "ESP32",
                 "ESP_PLATFORM",

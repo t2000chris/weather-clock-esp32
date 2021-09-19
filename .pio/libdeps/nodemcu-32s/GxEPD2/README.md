@@ -17,6 +17,7 @@
 - note that 7.5" e-paper displays don't work reliable if fed from 3.3V Arduino pin
 - note that Waveshare bords with "clever" reset circuit may need shortened reset pulse
 - use `init(115200, true, 2, false)` for Waveshare boards with "clever" reset circuit
+- note that Waveshare bords with "clever" reset circuit need 1k pull-up on RST on ESP8266, or different pin
 
 ### Paged Drawing, Picture Loop
  - This library uses paged drawing to limit RAM use and cope with missing single pixel update support
@@ -51,6 +52,7 @@
 - https://github.com/olikraus/u8glib/wiki/tpictureloop
 
 ### Supported SPI e-paper panels from Good Display:
+- GDEW0102T4     1.02" b/w
 - GDEP015OC1     1.54" b/w
 - GDEH0154D67    1.54" b/w, replacement for GDEP015OC1
 - GDEW0154T8     1.54" b/w 152x152
@@ -61,6 +63,7 @@
 - GDE0213B1      2.13" b/w
 - GDEH0213B72    2.13" b/w, replacement for GDE0213B1
 - GDEH0213B73    2.13" b/w, new replacement for GDE0213B1, GDEH0213B72
+- GDEM0213B74    2.13" b/w
 - GDEW0213I5F    2.13" b/w flexible
 - GDEW0213T5D    2.13" b/w
 - GDEW0213M21    2.13" b/w DES
@@ -96,12 +99,27 @@
 #### other supported panels
 - ED060SCT        6" grey levels, on Waveshare e-Paper IT8951 Driver HAT
 - ED060KC1        6" grey levels, 1448x1072, on Waveshare e-Paper IT8951 Driver HAT
+- ED078KC2        7.8" grey levels, 1872x1404, on Waveshare e-Paper IT8951 Driver HAT
 
 ### I can and will only support e-paper panels I have!
 - promotion panels from suppliers are welcome, to add support to GxEPD2
 - donation panels from users are welcome, to add support to GxEPD2
 
-### Version 1.3.4
+### Version 1.3.7
+- added support for GDEW0102T4 1.02" b/w 80x128 panel or Waveshare 1.02" b/w board
+- the GDEW0102T4 panel has a different connector than the other SPI panels
+- the GDEW0102T4 panel can be used with the DESPI-C102 connection module
+- https://buy-lcd.com/products/connection-board-demo-kit-for-102-inch-e-ink-display-despi-c102
+- my test have been done with the Waveshare 1.02" b/w board
+#### Version 1.3.6
+- added support for Waveshare 2.9" b/w V2, driver class GxEPD2_290_T94_V2
+- Waveshare 2.9" b/w V2 uses a GDEM029T94 variant without partial update wft in OTP
+- driver class GxEPD2_290_T94_V2 uses partial update wft written to registers
+- added NOTE for RST pull-up on ESP8266 with "clever" reset circuit, or alternate pin
+#### Version 1.3.5
+- added support for GDEM0213B74 122x250 b/w e-paper panel
+- added support for ED078KC2, 7.8" grey levels, 1872x1404, on Waveshare e-Paper IT8951 Driver HAT
+#### Version 1.3.4
 - added support for GDEH116T91 960x640 b/w e-paper panel
 - GDEH116T91 has only full screen refresh, no wavetable for differential refresh yet
 - added support for processor Arduino Nano RP2040 Connect to the examples

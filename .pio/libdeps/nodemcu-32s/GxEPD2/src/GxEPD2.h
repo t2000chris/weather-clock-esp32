@@ -35,6 +35,7 @@ class GxEPD2
   public:
     enum Panel
     {
+      GDEW0102T4, Waveshare_1_02_bw = GDEW0102T4,
       GDEP015OC1, Waveshare_1_54_bw = GDEP015OC1,
       GDEH0154D67, Waveshare_1_54_bw_D67 = GDEH0154D67,
       GDEW0154T8,
@@ -43,6 +44,7 @@ class GxEPD2
       GDE0213B1,  Waveshare_2_13_bw = GDE0213B1,
       GDEH0213B72,  Waveshare_2_13_bw_B72 = GDEH0213B72,
       GDEH0213B73,  Waveshare_2_13_bw_B73 = GDEH0213B73,
+      GDEM0213B74,
       GDEW0213I5F, Waveshare_2_13_flex = GDEW0213I5F,
       GDEW0213M21,
       GDEW0213T5D,
@@ -65,6 +67,7 @@ class GxEPD2
       GDEW1248T3, Waveshare_12_24_bw = GDEW1248T3,
       ED060SCT, // on Waveshare IT8951 Driver HAT
       ED060KC1, // on Waveshare IT8951 Driver HAT 1448x1072
+      ED078KC2, // on Waveshare IT8951 Driver HAT 1872x1404
       // 3-color
       GDEW0154Z04, Waveshare_1_54_bwr = GDEW0154Z04,
       GDEH0154Z90, Waveshare_1_54_bwr_Z90 = GDEH0154Z90,
